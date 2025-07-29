@@ -283,15 +283,4 @@
                 }
             });
 
-            document.addEventListener('click', function (e) {
-                if (e.target.classList.contains('remove-row')) {
-                    const row = e.target.closest('tr');
-                    if (document.querySelectorAll('#detalles-table tbody tr').length > 1) {
-                        row.remove();
-                        actualizarTotal();
-                    }
-                }
-            });
-    </script>
-
 </x-app-layout> 
