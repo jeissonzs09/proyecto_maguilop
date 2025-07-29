@@ -292,15 +292,6 @@
                     }
                 }
             });
-
-            function actualizarTotal() {
-                let total = 0;
-                document.querySelectorAll('.subtotal').forEach(input => {
-                    total += parseFloat(input.value) || 0;
-                });
-                document.getElementById('total').value = total.toFixed(2);
-            }
-        });
     </script>
 
 </x-app-layout> 
