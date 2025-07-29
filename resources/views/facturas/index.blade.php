@@ -283,4 +283,24 @@
                 }
             });
 
+            document.addEventListener('click', function (e) {
+                if (e.target.classList.contains('remove-row')) {
+                    const row = e.target.closest('tr');
+                    if (document.querySelectorAll('#detalles-table tbody tr').length > 1) {
+                        row.remove();
+                        actualizarTotal();
+                    }
+                }
+            });
+
+            function actualizarTotal() {
+                let total = 0;
+                document.querySelectorAll('.subtotal').forEach(input => {
+                    total += parseFloat(input.value) || 0;
+                });
+                document.getElementById('total').value = total.toFixed(2);
+            }
+        });
+    </script>
+
 </x-app-layout> 
