@@ -5,10 +5,6 @@
         </h2>
     </x-slot>
 
-    @php
-        $permisos = \App\Helpers\PermisosHelper::class;
-    @endphp
-
     {{-- Contenedor con Alpine --}}
     <div x-data="{ openModal: false }" class="mb-6">
 
@@ -95,9 +91,6 @@
         {{ Auth::user()->empleado->persona->NombreCompleto ?? 'Empleado no asignado' }}
     </p>
 </div>
-
-
-
                     {{-- Detalles --}}
                     <div class="mb-4">
                         <h3 class="text-lg font-semibold mb-2">Detalles de la Factura</h3>
