@@ -1,4 +1,17 @@
 <x-app-layout>
+
+@if(session('success'))
+    <div class="mb-4 px-4 py-3 rounded text-green-800 bg-green-200 text-lg font-semibold">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="mb-4 px-4 py-3 rounded text-red-800 bg-red-200 text-lg font-semibold">
+        {{ session('error') }}
+    </div>
+@endif
+
     <x-slot name="header">
         <h2 class="text-xl font-bold flex items-center gap-2">
             <i class="fas fa-users"></i> Empleados
@@ -9,7 +22,9 @@
         $permisos = \App\Helpers\PermisosHelper::class;
     @endphp
 
-    <div x-data="empleadosModal()" class="p-4">
+    <div x-data="empleadosModal()" class="p-4" >
+
+    
 
         {{-- Búsqueda y botón Nuevo --}}
         <div class="flex items-center justify-between mb-6">
@@ -113,92 +128,128 @@
             {{ $empleados->appends(['search' => request('search')])->links() }}
         </div>
 
-        {{-- Modal Crear --}}
-        <div
-            x-show="isCreateModalOpen"
-            x-transition
-            style="display: none;"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            @keydown.escape.window="closeCreateModal()"
-        >
-            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
-                <button
-                    @click="closeCreateModal()"
-                    class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                    title="Cerrar"
-                >&times;</button>
+        
+{{-- Modal Crear Empleado --}}
+<div
+    x-show="isCreateModalOpen"
+    x-transition
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    @keydown.escape.window="closeCreateModal()"
+    style="display: none;"
+    x-cloak
+>
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
+        <button
+            @click="closeCreateModal()"
+            class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            title="Cerrar"
+        >&times;</button>
 
-                <div class="flex items-center gap-2 mb-4 text-blue-600 text-2xl">
-                    <i class="fas fa-user-plus"></i>
-                    <h3 class="font-semibold">Nuevo Empleado</h3>
-                </div>
-
-                {{-- Mostrar error general (si ocurre) --}}
-                @if($errors->has('general'))
-                    <p class="text-red-600 font-bold mb-3">{{ $errors->first('general') }}</p>
-                @endif
-
-                <form method="POST" action="{{ route('empleados.store') }}" class="space-y-4" novalidate>
-                    @csrf
-
-                    <div>
-                        <label for="PersonaID" class="block text-gray-700 font-bold mb-2">Persona</label>
-                        <select name="PersonaID" id="PersonaID" required
-                                class="w-full border rounded px-3 py-2 @error('PersonaID') border-red-500 @enderror">
-                            <option value="">-- Selecciona una persona --</option>
-                            @foreach($personas as $persona)
-                                <option value="{{ $persona->PersonaID }}"
-                                    {{ old('PersonaID') == $persona->PersonaID ? 'selected' : '' }}>
-                                    {{ $persona->Nombre }} {{ $persona->Apellido }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('PersonaID')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
-
-                    <div>
-                        <label for="Departamento" class="block text-gray-700 font-bold mb-2">Departamento</label>
-                        <input type="text" name="Departamento" id="Departamento" required
-                               value="{{ old('Departamento') }}"
-                               class="w-full border rounded px-3 py-2 @error('Departamento') border-red-500 @enderror" />
-                        @error('Departamento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
-
-                    <div>
-                        <label for="Cargo" class="block text-gray-700 font-bold mb-2">Cargo</label>
-                        <input type="text" name="Cargo" id="Cargo" required
-                               value="{{ old('Cargo') }}"
-                               class="w-full border rounded px-3 py-2 @error('Cargo') border-red-500 @enderror" />
-                        @error('Cargo')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
-
-                    <div>
-                        <label for="FechaContratacion" class="block text-gray-700 font-bold mb-2">Fecha de Contratación</label>
-                        <input type="date" name="FechaContratacion" id="FechaContratacion" required
-                               value="{{ old('FechaContratacion') }}"
-                               class="w-full border rounded px-3 py-2 @error('FechaContratacion') border-red-500 @enderror" />
-                        @error('FechaContratacion')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
-
-                    <div>
-                        <label for="Salario" class="block text-gray-700 font-bold mb-2">Salario (Lps.)</label>
-                        <input type="number" step="0.01" name="Salario" id="Salario" required
-                               value="{{ old('Salario') }}"
-                               class="w-full border rounded px-3 py-2 @error('Salario') border-red-500 @enderror" />
-                        @error('Salario')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
-
-                    <div class="flex justify-end gap-2">
-                        <button type="button" @click="closeCreateModal()"
-                                class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancelar
-                        </button>
-                        <button type="submit"
-                                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Guardar
-                        </button>
-                    </div>
-                </form>
-            </div>
+        <div class="flex items-center gap-2 mb-4 text-blue-600 text-2xl">
+            <i class="fas fa-user-plus"></i>
+            <h3 class="font-semibold">Nuevo Empleado</h3>
         </div>
+
+        <form method="POST" action="{{ route('empleados.store') }}" class="space-y-4" novalidate>
+            @csrf
+            <input type="hidden" name="_action" value="create" />
+
+            {{-- Persona --}}
+            <div>
+                <label for="PersonaID" class="block text-gray-700 font-bold mb-2">Persona</label>
+                <select name="PersonaID" id="PersonaID" required
+                        x-model="createForm.PersonaID"
+                        class="w-full border rounded px-3 py-2"
+                        :class="{ 'border-red-500': !createForm.PersonaID }">
+                    <option value="">-- Selecciona una persona --</option>
+                    @foreach($personas as $persona)
+                        <option value="{{ $persona->PersonaID }}">{{ $persona->Nombre }} {{ $persona->Apellido }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Departamento --}}
+            <div>
+                <label for="Departamento" class="block text-gray-700 font-bold mb-2">Departamento</label>
+                <input
+                    type="text" name="Departamento" id="Departamento" required
+                    x-model="createForm.Departamento"
+                    maxlength="100"
+                    pattern="^[A-Za-zÁÉÍÓÚáéíóúñÑ ]{2,}$"
+                    title="Solo letras (A-Z), tildes y espacios. Mínimo 2 caracteres"
+                    @input="
+                        createForm.Departamento = $event.target.value
+                            .replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ ]/g,'')
+                            .replace(/\s+/g,' ')
+                            .trimStart()
+                    "
+                    class="w-full border rounded px-3 py-2"
+                    :class="{ 'border-red-500': createForm.Departamento.length < 2 }"
+                />
+            </div>
+
+            {{-- Cargo --}}
+            <div>
+                <label for="Cargo" class="block text-gray-700 font-bold mb-2">Cargo</label>
+                <input
+                    type="text" name="Cargo" id="Cargo" required
+                    x-model="createForm.Cargo"
+                    maxlength="100"
+                    pattern="^[A-Za-zÁÉÍÓÚáéíóúñÑ ]{2,}$"
+                    title="Solo letras (A-Z), tildes y espacios. Mínimo 2 caracteres"
+                    @input="
+                        createForm.Cargo = $event.target.value
+                            .replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ ]/g,'')
+                            .replace(/\s+/g,' ')
+                            .trimStart()
+                    "
+                    class="w-full border rounded px-3 py-2"
+                    :class="{ 'border-red-500': createForm.Cargo.length < 2 }"
+                />
+            </div>
+
+            {{-- Fecha de Contratación --}}
+            <div>
+                <label for="FechaContratacion" class="block text-gray-700 font-bold mb-2">Fecha de Contratación</label>
+                <input type="date" name="FechaContratacion" id="FechaContratacion"
+                       x-model="createForm.FechaContratacion"
+                       required
+                       class="w-full border rounded px-3 py-2"
+                       :class="{ 'border-red-500': !createForm.FechaContratacion }"
+                />
+            </div>
+
+            {{-- Salario --}}
+            <div>
+                <label for="Salario" class="block text-gray-700 font-bold mb-2">Salario (Lps.)</label>
+                <input type="number" name="Salario" id="Salario" step="0.01" min="0"
+                       x-model="createForm.Salario"
+                       required
+                       class="w-full border rounded px-3 py-2"
+                       :class="{ 'border-red-500': !(parseFloat(createForm.Salario) > 0) }"
+                />
+            </div>
+
+            {{-- Botones --}}
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="button" @click="closeCreateModal()"
+                        class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancelar
+                </button>
+                <button type="submit"
+                        :disabled="!createForm.PersonaID ||
+                                   !/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]{2,}$/.test(createForm.Departamento || '') ||
+                                   !/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]{2,}$/.test(createForm.Cargo || '') ||
+                                   !createForm.FechaContratacion ||
+                                   !(parseFloat(createForm.Salario) > 0)"
+                        class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
 
         {{-- Modal Editar --}}
         <div
@@ -240,16 +291,42 @@
 
                     <div>
                         <label for="DepartamentoEdit" class="block text-gray-700 font-bold mb-2">Departamento</label>
-                        <input type="text" name="Departamento" id="DepartamentoEdit" required
-                               class="w-full border rounded px-3 py-2"
-                               x-model="editEmpleado.Departamento" />
+                        <input type="text" name="Departamento" id="DepartamentoEdit"
+       x-model="editEmpleado.Departamento"
+       maxlength="100"
+       pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ ]{2,100}$"
+       title="Solo letras y espacios (2 a 100 caracteres)"
+       @input="
+           const limpio = $event.target.value.normalize('NFD').replace(/[^\\p{L} ]+/gu, '').slice(0,100);
+           editEmpleado.Departamento = limpio;
+           $event.target.value = limpio;
+       "
+       required
+       class="w-full border rounded px-3 py-2"
+       :class="{ 'border-red-500': editEmpleado.Departamento.length < 2 }"
+/>
+
+
                     </div>
 
                     <div>
                         <label for="CargoEdit" class="block text-gray-700 font-bold mb-2">Cargo</label>
-                        <input type="text" name="Cargo" id="CargoEdit" required
-                               class="w-full border rounded px-3 py-2"
-                               x-model="editEmpleado.Cargo" />
+                        <input type="text" name="Cargo" id="CargoEdit"
+       x-model="editEmpleado.Cargo"
+       maxlength="100"
+       pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ ]{2,100}$"
+       title="Solo letras y espacios (2 a 100 caracteres)"
+       @input="
+           const limpio = $event.target.value.normalize('NFD').replace(/[^\\p{L} ]+/gu, '').slice(0,100);
+           editEmpleado.Cargo = limpio;
+           $event.target.value = limpio;
+       "
+       required
+       class="w-full border rounded px-3 py-2"
+       :class="{ 'border-red-500': editEmpleado.Cargo.length < 2 }"
+/>
+
+
                     </div>
 
                     <div>
@@ -297,6 +374,15 @@
                 FechaContratacion: '',
                 Salario: ''
             },
+
+                    createForm: {
+            PersonaID: '',
+            Departamento: '',
+            Cargo: '',
+            FechaContratacion: '',
+            Salario: '',
+        },
+
 
             openCreateModal() {
                 this.isCreateModalOpen = true;

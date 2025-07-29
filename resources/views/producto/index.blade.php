@@ -5,6 +5,20 @@
         </h2>
     </x-slot>
 
+    @if (session('success'))
+    <div
+        x-data="{ show: true }"
+        x-init="setTimeout(() => show = false, 4000)"
+        x-show="show"
+        x-transition
+        class="fixed top-5 right-5 bg-green-500 text-white px-4 py-3 rounded shadow-lg z-50"
+        style="min-width: 250px;"
+    >
+        <strong>¡Éxito!</strong> {{ session('success') }}
+    </div>
+@endif
+
+
     @php
         $permisos = \App\Helpers\PermisosHelper::class;
     @endphp
@@ -37,7 +51,7 @@
                 </a>
             </div>
 
-            {{-- Botón Nuevo producto para abrir modal --}}
+            {{-- Boton Nuevo producto para abrir modal --}}
             @if($permisos::tienePermiso('Productos', 'crear'))
                 <button
                     @click="openCreateModal()"
@@ -56,7 +70,7 @@
                     <tr>
                         <th class="px-4 py-3 text-left">ID</th>
                         <th class="px-4 py-3 text-left">Nombre Producto</th>
-                        <th class="px-4 py-3 text-left">Descripción</th>
+                        <th class="px-4 py-3 text-left">Descripcion</th>
                         <th class="px-4 py-3 text-right">Precio Compra</th>
                         <th class="px-4 py-3 text-right">Precio Venta</th>
                         <th class="px-4 py-3 text-center">Stock</th>
@@ -96,7 +110,7 @@
 
                                     @if($permisos::tienePermiso('Productos', 'eliminar'))
                                         <form action="{{ route('producto.destroy', $producto->ProductoID) }}" method="POST"
-                                              onsubmit="return confirm('¿Estás seguro de eliminar este producto?')">
+                                              onsubmit="return confirm('¿Estas seguro de eliminar este producto?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
@@ -144,15 +158,31 @@
                     <div>
                         <label for="NombreProductoCreate" class="block text-sm font-medium text-gray-700 mb-1">Nombre del producto</label>
                         <input type="text" name="NombreProducto" id="NombreProductoCreate" required
-                               class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring focus:ring-indigo-200"
-                               x-model="createForm.NombreProducto">
+                               maxlength="60" pattern="[A-Za-z ]+"
+                               x-model="createForm.NombreProducto"
+                               @input="
+                                 createForm.NombreProducto = $event.target.value
+                                   .replace(/[^A-Za-z ]/g,'')
+                                   .replace(/\s+/g,' ')
+                                   .trimStart();
+                               "
+                               class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring focus:ring-indigo-200">
+                        @error('NombreProducto') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <label for="DescripcionCreate" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <label for="DescripcionCreate" class="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
                         <textarea name="Descripcion" id="DescripcionCreate" rows="3" required
-                                  class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring focus:ring-indigo-200"
-                                  x-model="createForm.Descripcion"></textarea>
+                                  maxlength="200" pattern="[A-Za-z0-9 ]+"
+                                  x-model="createForm.Descripcion"
+                                  @input="
+                                    createForm.Descripcion = $event.target.value
+                                      .replace(/[^A-Za-z0-9 ]/g,'')
+                                      .replace(/\s+/g,' ')
+                                      .trimStart();
+                                  "
+                                  class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring focus:ring-indigo-200"></textarea>
+                        @error('Descripcion') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="grid grid-cols-3 gap-4">
@@ -161,6 +191,7 @@
                             <input type="number" step="0.01" name="PrecioCompra" id="PrecioCompraCreate" required
                                    class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200"
                                    x-model="createForm.PrecioCompra">
+                            @error('PrecioCompra') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
@@ -168,6 +199,10 @@
                             <input type="number" step="0.01" name="PrecioVenta" id="PrecioVentaCreate" required
                                    class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200"
                                    x-model="createForm.PrecioVenta">
+                            @error('PrecioVenta') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+
+                            <p x-show="Number(createForm.PrecioVenta) < Number(createForm.PrecioCompra)"
+                               class="text-red-600 text-xs mt-1">El precio de venta no puede ser menor que el de compra.</p>
                         </div>
 
                         <div>
@@ -175,6 +210,7 @@
                             <input type="number" name="Stock" id="StockCreate" required
                                    class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200"
                                    x-model="createForm.Stock">
+                            @error('Stock') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
@@ -188,6 +224,7 @@
                                 <option value="{{ $proveedor->ProveedorID }}">{{ $proveedor->Descripcion }}</option>
                             @endforeach
                         </select>
+                        @error('ProveedorID') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="pt-4 flex justify-end space-x-4">
@@ -198,7 +235,8 @@
                         </button>
 
                         <button type="submit"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-semibold transition">
+                                :disabled="!/^[A-Za-z ]{3,60}$/.test(createForm.NombreProducto) || !/^[A-Za-z0-9 ]{10,200}$/.test(createForm.Descripcion)"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed">
                             Registrar Producto
                         </button>
                     </div>
@@ -237,15 +275,31 @@
                     <div>
                         <label for="NombreProductoEdit" class="block text-sm font-medium text-gray-700 mb-1">Nombre del producto</label>
                         <input type="text" name="NombreProducto" id="NombreProductoEdit" required
-                               class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200"
-                               x-model="editForm.NombreProducto">
+                               maxlength="60" pattern="[A-Za-z ]+"
+                               x-model="editForm.NombreProducto"
+                               @input="
+                                 editForm.NombreProducto = $event.target.value
+                                   .replace(/[^A-Za-z ]/g,'')
+                                   .replace(/\s+/g,' ')
+                                   .trimStart();
+                               "
+                               class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring focus:ring-indigo-200">
+                        @error('NombreProducto') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <label for="DescripcionEdit" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <label for="DescripcionEdit" class="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
                         <textarea name="Descripcion" id="DescripcionEdit" rows="3" required
-                                  class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200"
-                                  x-model="editForm.Descripcion"></textarea>
+                                  maxlength="200" pattern="[A-Za-z0-9 ]+"
+                                  x-model="editForm.Descripcion"
+                                  @input="
+                                    editForm.Descripcion = $event.target.value
+                                      .replace(/[^A-Za-z0-9 ]/g,'')
+                                      .replace(/\s+/g,' ')
+                                      .trimStart();
+                                  "
+                                  class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring focus:ring-indigo-200"></textarea>
+                        @error('Descripcion') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="grid grid-cols-3 gap-4">
@@ -254,6 +308,7 @@
                             <input type="number" step="0.01" name="PrecioCompra" id="PrecioCompraEdit" required
                                    class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200"
                                    x-model="editForm.PrecioCompra">
+                            @error('PrecioCompra') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
@@ -261,6 +316,10 @@
                             <input type="number" step="0.01" name="PrecioVenta" id="PrecioVentaEdit" required
                                    class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200"
                                    x-model="editForm.PrecioVenta">
+                            @error('PrecioVenta') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+
+                            <p x-show="Number(editForm.PrecioVenta) < Number(editForm.PrecioCompra)"
+                               class="text-red-600 text-xs mt-1">El precio de venta no puede ser menor que el de compra.</p>
                         </div>
 
                         <div>
@@ -268,6 +327,7 @@
                             <input type="number" name="Stock" id="StockEdit" required
                                    class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200"
                                    x-model="editForm.Stock">
+                            @error('Stock') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
@@ -284,6 +344,7 @@
                                 </option>
                             @endforeach
                         </select>
+                        @error('ProveedorID') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="pt-4 flex justify-end space-x-4">
@@ -294,7 +355,8 @@
                         </button>
 
                         <button type="submit"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-semibold transition">
+                                :disabled="!/^[A-Za-z ]{3,60}$/.test(editForm.NombreProducto) || !/^[A-Za-z0-9 ]{10,200}$/.test(editForm.Descripcion)"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed">
                             Guardar cambios
                         </button>
                     </div>
@@ -364,7 +426,9 @@
         }
     </script>
 
-    {{-- Asegúrate de incluir Alpine.js en tu layout principal --}}
+    {{-- Asegurate de incluir Alpine.js en tu layout principal --}}
     {{-- <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script> --}}
+    
 
 </x-app-layout>
+

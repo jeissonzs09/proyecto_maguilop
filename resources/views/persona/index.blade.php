@@ -158,7 +158,6 @@
 
                 <form method="POST" action="{{ route('persona.store') }}" class="space-y-4" novalidate>
                     @csrf
-                    {{-- Añadido para detectar desde donde se envía --}}
                     <input type="hidden" name="_action" value="create" />
 
                     <div>
@@ -166,8 +165,16 @@
                         <input
                             type="text" name="Nombre" id="Nombre" required
                             value="{{ old('Nombre') }}"
-                            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,}$"
-                            title="Solo letras y espacios, mínimo 2 caracteres"
+                            x-model="createForm.Nombre"
+                            maxlength="60"
+                            pattern="^[A-Za-z ]{2,}$"
+                            title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
+                            @input="
+                                createForm.Nombre = $event.target.value
+                                  .replace(/[^A-Za-z ]/g,'')
+                                  .replace(/\s+/g,' ')
+                                  .trimStart()
+                            "
                             class="w-full border rounded px-3 py-2 @error('Nombre') border-red-500 @enderror"
                         />
                         @error('Nombre')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
@@ -178,8 +185,16 @@
                         <input
                             type="text" name="Apellido" id="Apellido" required
                             value="{{ old('Apellido') }}"
-                            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,}$"
-                            title="Solo letras y espacios, mínimo 2 caracteres"
+                            x-model="createForm.Apellido"
+                            maxlength="60"
+                            pattern="^[A-Za-z ]{2,}$"
+                            title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
+                            @input="
+                                createForm.Apellido = $event.target.value
+                                  .replace(/[^A-Za-z ]/g,'')
+                                  .replace(/\s+/g,' ')
+                                  .trimStart()
+                            "
                             class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror"
                         />
                         @error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
@@ -190,6 +205,7 @@
                         <input
                             type="date" name="FechaNacimiento" id="FechaNacimiento" required
                             value="{{ old('FechaNacimiento') }}"
+                            x-model="createForm.FechaNacimiento"
                             class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror"
                         />
                         @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
@@ -200,12 +216,14 @@
                         <label class="inline-flex items-center mr-4">
                             <input type="radio" name="Genero" value="F" required
                                    {{ old('Genero') == 'F' ? 'checked' : '' }}
+                                   x-model="createForm.Genero"
                                    class="form-radio text-pink-600" />
                             <span class="ml-2">Femenino</span>
                         </label>
                         <label class="inline-flex items-center">
                             <input type="radio" name="Genero" value="M" required
                                    {{ old('Genero') == 'M' ? 'checked' : '' }}
+                                   x-model="createForm.Genero"
                                    class="form-radio text-blue-600" />
                             <span class="ml-2">Masculino</span>
                         </label>
@@ -217,11 +235,26 @@
                     <div>
                         <label for="CorreoElectronico" class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
                         <input
-                            type="email" name="CorreoElectronico" id="CorreoElectronico" required
-                            value="{{ old('CorreoElectronico') }}"
-                            class="w-full border rounded px-3 py-2 @error('CorreoElectronico') border-red-500 @enderror"
-                        />
-                        @error('CorreoElectronico')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+    type="email" name="CorreoElectronico" id="CorreoElectronico" required
+    x-model="createForm.CorreoElectronico"
+    maxlength="100"
+    pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+    title="Debe contener @ y un dominio valido"
+    @input="createForm.CorreoElectronico = $event.target.value.trim()"
+    class="w-full border rounded px-3 py-2"
+    :class="{
+        'border-red-500': createForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.CorreoElectronico),
+        'border-gray-300': !(createForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.CorreoElectronico))
+    }"
+/>
+<p
+    x-show="createForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.CorreoElectronico)"
+    class="text-red-600 text-xs mt-1"
+>
+    Ingresa un correo valido que lleve @ y dominio (ej. usuario@dominio.com).
+</p>
+@error('CorreoElectronico')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+
                     </div>
 
                     {{-- Campos de Teléfonos --}}
@@ -249,8 +282,12 @@
                                         :name="'telefonos[' + index + '][Numero]'"
                                         class="w-full border rounded px-2 py-1"
                                         x-model="telefono.Numero"
-                                        pattern="^[0-9]{8}$"
+                                        maxlength="8"
+                                        pattern="^\d{8}$"
                                         title="Número de 8 dígitos"
+                                        @input="
+                                            telefono.Numero = $event.target.value.replace(/\D/g,'').slice(0,8)
+                                        "
                                     />
                                 </div>
                                 <div class="col-span-2 flex justify-end">
@@ -269,7 +306,17 @@
                                 class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancelar
                         </button>
                         <button type="submit"
-                                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Guardar
+                                :disabled="
+                                    !/^[A-Za-z ]{2,}$/.test(createForm.Nombre) ||
+                                    !/^[A-Za-z ]{2,}$/.test(createForm.Apellido) ||
+                                    !createForm.FechaNacimiento ||
+                                    !/^[FM]$/.test(createForm.Genero || '') ||
+                                    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.CorreoElectronico || '') ||
+                                    telefonos.length === 0 ||
+                                    telefonos.some(t => !/^\d{8}$/.test(t.Numero || ''))
+                                "
+                                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Guardar
                         </button>
                     </div>
                 </form>
@@ -292,126 +339,168 @@
                     title="Cerrar"
                 >&times;</button>
 
-                <div class="flex items-center gap-2 mb-4 text-yellow-600 text-2xl">
-                    <i class="fas fa-user-edit"></i>
-                    <h3 class="font-semibold">Editar Persona</h3>
+            <div class="flex items-center gap-2 mb-4 text-yellow-600 text-2xl">
+                <i class="fas fa-user-edit"></i>
+                <h3 class="font-semibold">Editar Persona</h3>
+            </div>
+
+            <form method="POST" :action="actionUrl()" class="space-y-4" novalidate>
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="_action" value="edit" />
+
+                <div>
+                    <label for="Nombre" class="block text-gray-700 font-bold mb-2">Nombre</label>
+                    <input
+                        type="text" name="Nombre" id="Nombre" required
+                        x-model="editForm.Nombre"
+                        maxlength="60"
+                        pattern="^[A-Za-z ]{2,}$"
+                        title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
+                        @input="
+                            editForm.Nombre = $event.target.value
+                              .replace(/[^A-Za-z ]/g,'')
+                              .replace(/\s+/g,' ')
+                              .trimStart()
+                        "
+                        class="w-full border rounded px-3 py-2 @error('Nombre') border-red-500 @enderror"
+                    />
+                    @error('Nombre')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                <form method="POST" :action="actionUrl()" class="space-y-4" novalidate>
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="_action" value="edit" />
+                <div>
+                    <label for="Apellido" class="block text-gray-700 font-bold mb-2">Apellido</label>
+                    <input
+                        type="text" name="Apellido" id="Apellido" required
+                        x-model="editForm.Apellido"
+                        maxlength="60"
+                        pattern="^[A-Za-z ]{2,}$"
+                        title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
+                        @input="
+                            editForm.Apellido = $event.target.value
+                              .replace(/[^A-Za-z ]/g,'')
+                              .replace(/\s+/g,' ')
+                              .trimStart()
+                        "
+                        class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror"
+                    />
+                    @error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                </div>
 
-                    <div>
-                        <label for="Nombre" class="block text-gray-700 font-bold mb-2">Nombre</label>
-                        <input
-                            type="text" name="Nombre" id="Nombre" required
-                            x-model="editForm.Nombre"
-                            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,}$"
-                            title="Solo letras y espacios, mínimo 2 caracteres"
-                            class="w-full border rounded px-3 py-2 @error('Nombre') border-red-500 @enderror"
-                        />
-                        @error('Nombre')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
+                <div>
+                    <label for="FechaNacimiento" class="block text-gray-700 font-bold mb-2">Fecha de Nacimiento</label>
+                    <input
+                        type="date" name="FechaNacimiento" id="FechaNacimiento" required
+                        x-model="editForm.FechaNacimiento"
+                        class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror"
+                    />
+                    @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                </div>
 
-                    <div>
-                        <label for="Apellido" class="block text-gray-700 font-bold mb-2">Apellido</label>
-                        <input
-                            type="text" name="Apellido" id="Apellido" required
-                            x-model="editForm.Apellido"
-                            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,}$"
-                            title="Solo letras y espacios, mínimo 2 caracteres"
-                            class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror"
-                        />
-                        @error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Género</label>
+                    <label class="inline-flex items-center mr-4">
+                        <input type="radio" name="Genero" value="F" x-model="editForm.Genero"
+                               class="form-radio text-pink-600" />
+                        <span class="ml-2">Femenino</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="Genero" value="M" x-model="editForm.Genero"
+                               class="form-radio text-blue-600" />
+                        <span class="ml-2">Masculino</span>
+                    </label>
+                    @error('Genero')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
 
-                    <div>
-                        <label for="FechaNacimiento" class="block text-gray-700 font-bold mb-2">Fecha de Nacimiento</label>
-                        <input
-                            type="date" name="FechaNacimiento" id="FechaNacimiento" required
-                            x-model="editForm.FechaNacimiento"
-                            class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror"
-                        />
-                        @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
+                <div>
+                    <label for="CorreoElectronico" class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
+                    <input
+    type="email" name="CorreoElectronico" id="CorreoElectronico" required
+    x-model="editForm.CorreoElectronico"
+    maxlength="100"
+    pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+    title="Debe contener @ y un dominio valido"
+    @input="editForm.CorreoElectronico = $event.target.value.trim()"
+    class="w-full border rounded px-3 py-2"
+    :class="{
+        'border-red-500': editForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.CorreoElectronico),
+        'border-gray-300': !(editForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.CorreoElectronico))
+    }"
+/>
+<p
+    x-show="editForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.CorreoElectronico)"
+    class="text-red-600 text-xs mt-1"
+>
+    Ingresa un correo valido que lleve @ y dominio (ej. usuario@dominio.com).
+</p>
+@error('CorreoElectronico')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
 
-                    <div>
-                        <label class="block text-gray-700 font-bold mb-2">Género</label>
-                        <label class="inline-flex items-center mr-4">
-                            <input type="radio" name="Genero" value="F" x-model="editForm.Genero"
-                                   class="form-radio text-pink-600" />
-                            <span class="ml-2">Femenino</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="Genero" value="M" x-model="editForm.Genero"
-                                   class="form-radio text-blue-600" />
-                            <span class="ml-2">Masculino</span>
-                        </label>
-                        @error('Genero')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                </div>
 
-                    <div>
-                        <label for="CorreoElectronico" class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
-                        <input
-                            type="email" name="CorreoElectronico" id="CorreoElectronico" required
-                            x-model="editForm.CorreoElectronico"
-                            class="w-full border rounded px-3 py-2 @error('CorreoElectronico') border-red-500 @enderror"
-                        />
-                        @error('CorreoElectronico')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
+                {{-- Teléfonos --}}
+                <div class="border-t border-gray-300 pt-4">
+                    <h4 class="text-md font-semibold mb-2 text-gray-700">Teléfonos</h4>
 
-                    {{-- Teléfonos --}}
-                    <div class="border-t border-gray-300 pt-4">
-                        <h4 class="text-md font-semibold mb-2 text-gray-700">Teléfonos</h4>
-
-                        <template x-for="(telefono, index) in editForm.telefonos" :key="index">
-                            <div class="grid grid-cols-2 gap-2 mb-3">
-                                <div>
-                                    <label :for="'TipoEditar' + index" class="block text-gray-600 text-sm font-bold mb-1">Tipo</label>
-                                    <select
-                                        :name="'telefonos[' + index + '][Tipo]'"
-                                        class="w-full border rounded px-2 py-1"
-                                        x-model="telefono.Tipo"
-                                    >
-                                        <option value="Personal">Personal</option>
-                                        <option value="Trabajo">Trabajo</option>
-                                        <option value="Otro">Otro</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label :for="'NumeroEditar' + index" class="block text-gray-600 text-sm font-bold mb-1">Número</label>
-                                    <input
-                                        type="text"
-                                        :name="'telefonos[' + index + '][Numero]'"
-                                        class="w-full border rounded px-2 py-1"
-                                        x-model="telefono.Numero"
-                                        pattern="^[0-9]{8}$"
-                                        title="Número de 8 dígitos"
-                                    />
-                                </div>
-                                <div class="col-span-2 flex justify-end">
-                                    <button type="button" @click="removeTelefonoEdit(index)" class="text-red-600 hover:underline text-sm">Eliminar</button>
-                                </div>
+                    <template x-for="(telefono, index) in editForm.telefonos" :key="index">
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div>
+                                <label :for="'TipoEditar' + index" class="block text-gray-600 text-sm font-bold mb-1">Tipo</label>
+                                <select
+                                    :name="'telefonos[' + index + '][Tipo]'"
+                                    class="w-full border rounded px-2 py-1"
+                                    x-model="telefono.Tipo"
+                                >
+                                    <option value="Personal">Personal</option>
+                                    <option value="Trabajo">Trabajo</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
                             </div>
-                        </template>
+                            <div>
+                                <label :for="'NumeroEditar' + index" class="block text-gray-600 text-sm font-bold mb-1">Número</label>
+                                <input
+                                    type="text"
+                                    :name="'telefonos[' + index + '][Numero]'"
+                                    class="w-full border rounded px-2 py-1"
+                                    x-model="telefono.Numero"
+                                    maxlength="8"
+                                    pattern="^\d{8}$"
+                                    title="Número de 8 dígitos"
+                                    @input="
+                                        telefono.Numero = $event.target.value.replace(/\D/g,'').slice(0,8)
+                                    "
+                                />
+                            </div>
+                            <div class="col-span-2 flex justify-end">
+                                <button type="button" @click="removeTelefonoEdit(index)" class="text-red-600 hover:underline text-sm">Eliminar</button>
+                            </div>
+                        </div>
+                    </template>
 
-                        <button type="button" @click="addTelefonoEdit()" class="text-sm text-blue-600 hover:underline mt-2">
-                            + Agregar otro teléfono
-                        </button>
-                    </div>
+                    <button type="button" @click="addTelefonoEdit()" class="text-sm text-blue-600 hover:underline mt-2">
+                        + Agregar otro teléfono
+                    </button>
+                </div>
 
-                    <div class="flex justify-end gap-2 mt-4">
-                        <button type="button" @click="closeEditModal()"
-                                class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancelar
-                        </button>
-                        <button type="submit"
-                                class="px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700">Actualizar
-                        </button>
-                    </div>
-                </form>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="button" @click="closeEditModal()"
+                            class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancelar
+                    </button>
+                    <button type="submit"
+                            :disabled="
+                                !/^[A-Za-z ]{2,}$/.test(editForm.Nombre || '') ||
+                                !/^[A-Za-z ]{2,}$/.test(editForm.Apellido || '') ||
+                                !editForm.FechaNacimiento ||
+                                !/^[FM]$/.test(editForm.Genero || '') ||
+                                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.CorreoElectronico || '') ||
+                                (editForm.telefonos || []).length === 0 ||
+                                (editForm.telefonos || []).some(t => !/^\d{8}$/.test(t.Numero || ''))
+                            "
+                            class="px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed">Actualizar
+                    </button>
+                </div>
+            </form>
             </div>
         </div>
 
@@ -427,10 +516,19 @@
             isCreateModalOpen: false,
             isEditModalOpen: false,
 
-            telefonos: [
-                { Tipo: 'Personal', Numero: '' }
-            ],
+            // Estado para crear
+            createForm: {
+                Nombre: @json(old('Nombre', '')),
+                Apellido: @json(old('Apellido', '')),
+                FechaNacimiento: @json(old('FechaNacimiento', '')),
+                Genero: @json(old('Genero', '')),
+                CorreoElectronico: @json(old('CorreoElectronico', '')),
+            },
 
+            // Teléfonos (crear)
+            telefonos: @json(old('telefonos', [ ['Tipo' => 'Personal', 'Numero' => ''] ])),
+
+            // Estado para editar
             editForm: {
                 PersonaID: '',
                 Nombre: '',
@@ -443,7 +541,9 @@
 
             openCreateModal() {
                 this.isCreateModalOpen = true;
-                this.telefonos = [{ Tipo: 'Personal', Numero: '' }];
+                // Si quieres limpiar al abrir manualmente:
+                // this.createForm = { Nombre: '', Apellido: '', FechaNacimiento: '', Genero: '', CorreoElectronico: '' };
+                // this.telefonos = [{ Tipo: 'Personal', Numero: '' }];
             },
 
             closeCreateModal() {
@@ -453,11 +553,11 @@
             openEditModal(persona) {
                 this.editForm = {
                     PersonaID: persona.PersonaID,
-                    Nombre: persona.Nombre,
-                    Apellido: persona.Apellido,
-                    FechaNacimiento: persona.FechaNacimiento,
-                    Genero: persona.Genero.trim().toUpperCase(),
-                    CorreoElectronico: persona.CorreoElectronico,
+                    Nombre: (persona.Nombre || ''),
+                    Apellido: (persona.Apellido || ''),
+                    FechaNacimiento: persona.FechaNacimiento || '',
+                    Genero: (persona.Genero || '').trim().toUpperCase(),
+                    CorreoElectronico: persona.CorreoElectronico || '',
                     telefonos: persona.telefonos ? JSON.parse(JSON.stringify(persona.telefonos)) : []
                 };
                 this.isEditModalOpen = true;
@@ -489,4 +589,60 @@
         }
     }
     </script>
+
+@php
+    $toastType = session('error') ? 'error' : (session('success') ? 'success' : null);
+    $toastMsg  = session('error') ?: session('success');
+@endphp
+
+@if($toastType)
+    <div
+        id="toast-persona"
+        role="status" aria-live="polite"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+               text-white px-10 py-6 rounded-full shadow-2xl flex items-center gap-5
+               z-50 animate-fadeIn text-xl font-semibold ring-1 ring-white/20
+               max-w-[90vw]"
+        style="min-width: 420px; background-color: {{ $toastType === 'error' ? '#dc2626' : '#16a34a' }};"
+        onclick="this.remove()"
+    >
+        @if($toastType === 'error')
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+        @else
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2l4-4" />
+            </svg>
+        @endif
+
+        <span class="leading-snug break-words">{{ $toastMsg }}</span>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            const toast = document.getElementById('toast-persona');
+            if (toast) {
+                toast.style.transition = 'opacity .5s ease, transform .5s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -50%) scale(.95)';
+                setTimeout(() => toast.remove(), 500);
+            }
+        }, 3200);
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -48%) scale(.97); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .animate-fadeIn { animation: fadeIn .28s ease forwards; }
+    </style>
+@endif
+
 </x-app-layout>

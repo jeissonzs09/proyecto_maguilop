@@ -16,43 +16,46 @@ use App\Helpers\BitacoraHelper;
 
 class FacturaController extends Controller
 {
-    public function index(Request $request)
-    {
-        if (!PermisosHelper::tienePermiso('Factura', 'ver')) {
-            abort(403, 'No tienes permiso para ver esta sección.');
-        }
-
-        $query = Factura::with(['cliente', 'empleado.persona', 'detalles.producto']);
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-
-            $query->where('Fecha', 'LIKE', "%{$search}%")
-                ->orWhere('Total', 'LIKE', "%{$search}%")
-                ->orWhereHas('cliente', fn($q) =>
-                    $q->where('NombreCliente', 'LIKE', "%{$search}%")
-                )
-                ->orWhereHas('empleado.persona', fn($q) =>
-                    $q->where('Nombre', 'LIKE', "%{$search}%")
-                      ->orWhere('Apellido', 'LIKE', "%{$search}%")
-                )
-                ->orWhereHas('detalles.producto', fn($q) =>
-                    $q->where('NombreProducto', 'LIKE', "%{$search}%")
-                )
-                ->orWhereHas('detalles', fn($q) =>
-                    $q->where('Cantidad', 'LIKE', "%{$search}%")
-                      ->orWhere('PrecioUnitario', 'LIKE', "%{$search}%")
-                      ->orWhere('Subtotal', 'LIKE', "%{$search}%")
-                );
-        }
-
-        $facturas = $query->paginate(10);
-
-        $clientes = Cliente::orderBy('NombreCliente')->get();
-        $productos = Producto::where('Estado', 'Activo')->orderBy('NombreProducto')->get();
-
-        return view('facturas.index', compact('facturas', 'clientes', 'productos'));
+   public function index(Request $request)
+{
+    if (!PermisosHelper::tienePermiso('Factura', 'ver')) {
+        abort(403, 'No tienes permiso para ver esta sección.');
     }
+
+    $query = Factura::with(['cliente', 'empleado.persona', 'detalles.producto']);
+
+    if ($request->filled('search')) {
+        $search = $request->search;
+
+        $query->where('Fecha', 'LIKE', "%{$search}%")
+            ->orWhere('Total', 'LIKE', "%{$search}%")
+            ->orWhereHas('cliente', fn($q) =>
+                $q->where('NombreCliente', 'LIKE', "%{$search}%")
+            )
+            ->orWhereHas('empleado.persona', fn($q) =>
+                $q->where('Nombre', 'LIKE', "%{$search}%")
+                  ->orWhere('Apellido', 'LIKE', "%{$search}%")
+            )
+            ->orWhereHas('detalles.producto', fn($q) =>
+                $q->where('NombreProducto', 'LIKE', "%{$search}%")
+            )
+            ->orWhereHas('detalles', fn($q) =>
+                $q->where('Cantidad', 'LIKE', "%{$search}%")
+                  ->orWhere('PrecioUnitario', 'LIKE', "%{$search}%")
+                  ->orWhere('Subtotal', 'LIKE', "%{$search}%")
+            );
+    }
+
+    $query->orderByDesc('FacturaID');
+
+    $facturas = $query->paginate(10);
+
+    $clientes = Cliente::orderBy('NombreCliente')->get();
+    $productos = Producto::where('Estado', 'Activo')->orderBy('NombreProducto')->get();
+
+    return view('facturas.index', compact('facturas', 'clientes', 'productos'));
+}
+
 
     public function create()
     {
@@ -163,7 +166,7 @@ class FacturaController extends Controller
 
             DB::commit();
 
-            return redirect()->route('facturas.index')->with('success', 'Factura eliminada correctamente.');
+            return redirect()->route('facturas.index')->with('error', 'Factura eliminada correctamente.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Error al eliminar la factura: ' . $e->getMessage()]);
