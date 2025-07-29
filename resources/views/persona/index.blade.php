@@ -9,10 +9,20 @@
         $permisos = \App\Helpers\PermisosHelper::class;
     @endphp
 
-    <div x-data="personasModal()" class="p-4">
+    <div 
+        x-data="personasModal()" 
+        class="p-4"
+        x-init="
+            @if ($errors->any() && session()->getOldInput('_action') === 'create')
+                isCreateModalOpen = true
+            @elseif ($errors->any() && session()->getOldInput('_action') === 'edit')
+                isEditModalOpen = true
+            @endif
+        "
+    >
 
         {{-- Búsqueda y botón Nuevo --}}
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-3">
                 <div class="relative max-w-xs w-full">
                     <input
@@ -30,19 +40,23 @@
                         </svg>
                     </div>
                 </div>
-<a href="{{ route('empleados.exportarPDF', ['search' => request('search')]) }}"
+
+                <a href="{{ route('empleados.exportarPDF', ['search' => request('search')]) }}"
                    class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md shadow whitespace-nowrap">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </a>
-                @if($permisos::tienePermiso('Persona', 'crear'))
+            </div>
+
+            @if($permisos::tienePermiso('Persona', 'crear'))
+                <div>
                     <button
                         @click="openCreateModal()"
                         class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow whitespace-nowrap"
                     >
                         <i class="fas fa-plus"></i> Nueva Persona
                     </button>
-                @endif
-            </div>
+                </div>
+            @endif
         </div>
 
         {{-- Tabla de personas --}}
@@ -79,33 +93,32 @@
                             <td class="px-4 py-2 text-center">
                                 <div class="flex items-center justify-center gap-2">
                                     @if($permisos::tienePermiso('Persona', 'editar'))
-                                      <button
-                                       @click="openEditModal({{ $persona->toJson() }})"
-                                        class="bg-yellow-400 hover:bg-yellow-500 text-white p-2 rounded-full"
-                                        title="Editar"
-                                      >
-                                        <i class="fas fa-edit"></i>
-                                      </button>
+                                        <button
+                                            @click="openEditModal({{ $persona->toJson() }})"
+                                            class="bg-yellow-400 hover:bg-yellow-500 text-white p-2 rounded-full"
+                                            title="Editar"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                        </button>
                                     @endif
 
                                     @if($permisos::tienePermiso('Persona', 'eliminar'))
                                         <form 
-    action="{{ route('persona.destroy', $persona->PersonaID) }}" 
-    method="POST" 
-    onsubmit="return confirm('¿Seguro de eliminar esta persona?')" 
-    style="display:inline-block;"
->
-    @csrf
-    @method('DELETE')
-    <button 
-        type="submit" 
-        class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full" 
-        title="Eliminar"
-    >
-        <i class="fas fa-trash-alt"></i>
-    </button>
-</form>
-
+                                            action="{{ route('persona.destroy', $persona->PersonaID) }}" 
+                                            method="POST" 
+                                            onsubmit="return confirm('¿Seguro de eliminar esta persona?')" 
+                                            style="display:inline-block;"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <button 
+                                                type="submit" 
+                                                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full" 
+                                                title="Eliminar"
+                                            >
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
                                     @endif
                                 </div>
                             </td>
@@ -145,28 +158,40 @@
 
                 <form method="POST" action="{{ route('persona.store') }}" class="space-y-4" novalidate>
                     @csrf
+                    {{-- Añadido para detectar desde donde se envía --}}
+                    <input type="hidden" name="_action" value="create" />
 
                     <div>
                         <label for="Nombre" class="block text-gray-700 font-bold mb-2">Nombre</label>
-                        <input type="text" name="Nombre" id="Nombre" required
-                               value="{{ old('Nombre') }}"
-                               class="w-full border rounded px-3 py-2 @error('Nombre') border-red-500 @enderror" />
+                        <input
+                            type="text" name="Nombre" id="Nombre" required
+                            value="{{ old('Nombre') }}"
+                            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,}$"
+                            title="Solo letras y espacios, mínimo 2 caracteres"
+                            class="w-full border rounded px-3 py-2 @error('Nombre') border-red-500 @enderror"
+                        />
                         @error('Nombre')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <div>
                         <label for="Apellido" class="block text-gray-700 font-bold mb-2">Apellido</label>
-                        <input type="text" name="Apellido" id="Apellido" required
-                               value="{{ old('Apellido') }}"
-                               class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror" />
+                        <input
+                            type="text" name="Apellido" id="Apellido" required
+                            value="{{ old('Apellido') }}"
+                            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,}$"
+                            title="Solo letras y espacios, mínimo 2 caracteres"
+                            class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror"
+                        />
                         @error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <div>
                         <label for="FechaNacimiento" class="block text-gray-700 font-bold mb-2">Fecha de Nacimiento</label>
-                        <input type="date" name="FechaNacimiento" id="FechaNacimiento" required
-                               value="{{ old('FechaNacimiento') }}"
-                               class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror" />
+                        <input
+                            type="date" name="FechaNacimiento" id="FechaNacimiento" required
+                            value="{{ old('FechaNacimiento') }}"
+                            class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror"
+                        />
                         @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -175,16 +200,15 @@
                         <label class="inline-flex items-center mr-4">
                             <input type="radio" name="Genero" value="F" required
                                    {{ old('Genero') == 'F' ? 'checked' : '' }}
-                                   class="form-radio text-pink-600">
+                                   class="form-radio text-pink-600" />
                             <span class="ml-2">Femenino</span>
                         </label>
                         <label class="inline-flex items-center">
                             <input type="radio" name="Genero" value="M" required
                                    {{ old('Genero') == 'M' ? 'checked' : '' }}
-                                   class="form-radio text-blue-600">
+                                   class="form-radio text-blue-600" />
                             <span class="ml-2">Masculino</span>
                         </label>
-
                         @error('Genero')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -192,9 +216,11 @@
 
                     <div>
                         <label for="CorreoElectronico" class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
-                        <input type="email" name="CorreoElectronico" id="CorreoElectronico" required
-                               value="{{ old('CorreoElectronico') }}"
-                               class="w-full border rounded px-3 py-2 @error('CorreoElectronico') border-red-500 @enderror" />
+                        <input
+                            type="email" name="CorreoElectronico" id="CorreoElectronico" required
+                            value="{{ old('CorreoElectronico') }}"
+                            class="w-full border rounded px-3 py-2 @error('CorreoElectronico') border-red-500 @enderror"
+                        />
                         @error('CorreoElectronico')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -206,7 +232,11 @@
                             <div class="grid grid-cols-2 gap-2 mb-3">
                                 <div>
                                     <label :for="'Tipo' + index" class="block text-gray-600 text-sm font-bold mb-1">Tipo</label>
-                                    <select :name="'telefonos[' + index + '][Tipo]'" class="w-full border rounded px-2 py-1" x-model="telefono.Tipo">
+                                    <select
+                                        :name="'telefonos[' + index + '][Tipo]'"
+                                        class="w-full border rounded px-2 py-1"
+                                        x-model="telefono.Tipo"
+                                    >
                                         <option value="Personal">Personal</option>
                                         <option value="Trabajo">Trabajo</option>
                                         <option value="Otro">Otro</option>
@@ -214,7 +244,14 @@
                                 </div>
                                 <div>
                                     <label :for="'Numero' + index" class="block text-gray-600 text-sm font-bold mb-1">Número</label>
-                                    <input type="text" :name="'telefonos[' + index + '][Numero]'" class="w-full border rounded px-2 py-1" x-model="telefono.Numero" />
+                                    <input
+                                        type="text"
+                                        :name="'telefonos[' + index + '][Numero]'"
+                                        class="w-full border rounded px-2 py-1"
+                                        x-model="telefono.Numero"
+                                        pattern="^[0-9]{8}$"
+                                        title="Número de 8 dígitos"
+                                    />
                                 </div>
                                 <div class="col-span-2 flex justify-end">
                                     <button type="button" @click="removeTelefono(index)" class="text-red-600 hover:underline text-sm">Eliminar</button>
@@ -263,47 +300,67 @@
                 <form method="POST" :action="actionUrl()" class="space-y-4" novalidate>
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="_action" value="edit" />
 
                     <div>
                         <label for="Nombre" class="block text-gray-700 font-bold mb-2">Nombre</label>
-                        <input type="text" name="Nombre" id="Nombre" required
-                               x-model="editForm.Nombre"
-                               class="w-full border rounded px-3 py-2" />
+                        <input
+                            type="text" name="Nombre" id="Nombre" required
+                            x-model="editForm.Nombre"
+                            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,}$"
+                            title="Solo letras y espacios, mínimo 2 caracteres"
+                            class="w-full border rounded px-3 py-2 @error('Nombre') border-red-500 @enderror"
+                        />
+                        @error('Nombre')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <div>
                         <label for="Apellido" class="block text-gray-700 font-bold mb-2">Apellido</label>
-                        <input type="text" name="Apellido" id="Apellido" required
-                               x-model="editForm.Apellido"
-                               class="w-full border rounded px-3 py-2" />
+                        <input
+                            type="text" name="Apellido" id="Apellido" required
+                            x-model="editForm.Apellido"
+                            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,}$"
+                            title="Solo letras y espacios, mínimo 2 caracteres"
+                            class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror"
+                        />
+                        @error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <div>
                         <label for="FechaNacimiento" class="block text-gray-700 font-bold mb-2">Fecha de Nacimiento</label>
-                        <input type="date" name="FechaNacimiento" id="FechaNacimiento" required
-                               x-model="editForm.FechaNacimiento"
-                               class="w-full border rounded px-3 py-2" />
+                        <input
+                            type="date" name="FechaNacimiento" id="FechaNacimiento" required
+                            x-model="editForm.FechaNacimiento"
+                            class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror"
+                        />
+                        @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <div>
                         <label class="block text-gray-700 font-bold mb-2">Género</label>
                         <label class="inline-flex items-center mr-4">
                             <input type="radio" name="Genero" value="F" x-model="editForm.Genero"
-                                   class="form-radio text-pink-600">
+                                   class="form-radio text-pink-600" />
                             <span class="ml-2">Femenino</span>
                         </label>
                         <label class="inline-flex items-center">
                             <input type="radio" name="Genero" value="M" x-model="editForm.Genero"
-                                   class="form-radio text-blue-600">
+                                   class="form-radio text-blue-600" />
                             <span class="ml-2">Masculino</span>
                         </label>
+                        @error('Genero')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
                         <label for="CorreoElectronico" class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
-                        <input type="email" name="CorreoElectronico" id="CorreoElectronico" required
-                               x-model="editForm.CorreoElectronico"
-                               class="w-full border rounded px-3 py-2" />
+                        <input
+                            type="email" name="CorreoElectronico" id="CorreoElectronico" required
+                            x-model="editForm.CorreoElectronico"
+                            class="w-full border rounded px-3 py-2 @error('CorreoElectronico') border-red-500 @enderror"
+                        />
+                        @error('CorreoElectronico')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     {{-- Teléfonos --}}
@@ -314,7 +371,11 @@
                             <div class="grid grid-cols-2 gap-2 mb-3">
                                 <div>
                                     <label :for="'TipoEditar' + index" class="block text-gray-600 text-sm font-bold mb-1">Tipo</label>
-                                    <select :name="'telefonos[' + index + '][Tipo]'" class="w-full border rounded px-2 py-1" x-model="telefono.Tipo">
+                                    <select
+                                        :name="'telefonos[' + index + '][Tipo]'"
+                                        class="w-full border rounded px-2 py-1"
+                                        x-model="telefono.Tipo"
+                                    >
                                         <option value="Personal">Personal</option>
                                         <option value="Trabajo">Trabajo</option>
                                         <option value="Otro">Otro</option>
@@ -322,7 +383,14 @@
                                 </div>
                                 <div>
                                     <label :for="'NumeroEditar' + index" class="block text-gray-600 text-sm font-bold mb-1">Número</label>
-                                    <input type="text" :name="'telefonos[' + index + '][Numero]'" class="w-full border rounded px-2 py-1" x-model="telefono.Numero" />
+                                    <input
+                                        type="text"
+                                        :name="'telefonos[' + index + '][Numero]'"
+                                        class="w-full border rounded px-2 py-1"
+                                        x-model="telefono.Numero"
+                                        pattern="^[0-9]{8}$"
+                                        title="Número de 8 dígitos"
+                                    />
                                 </div>
                                 <div class="col-span-2 flex justify-end">
                                     <button type="button" @click="removeTelefonoEdit(index)" class="text-red-600 hover:underline text-sm">Eliminar</button>
@@ -422,8 +490,3 @@
     }
     </script>
 </x-app-layout>
-
-
-
-
-

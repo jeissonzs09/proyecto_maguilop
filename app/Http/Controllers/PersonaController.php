@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
+
 use App\Models\Persona;
 use App\Models\Telefono;
 use App\Helpers\PermisosHelper;
@@ -30,43 +31,74 @@ class PersonaController extends Controller
         return view('persona.index', compact('personas'));
     }
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'Nombre'           => 'required|string|max:255',
-            'Apellido'         => 'required|string|max:255',
-            'FechaNacimiento'  => 'required|date',
-            'Genero'           => 'required|in:F,M',
-            'CorreoElectronico'=> 'nullable|email|max:255|unique:persona,CorreoElectronico',
-            'telefonos.*.Tipo'   => 'required|string|max:50',
-            'telefonos.*.Numero' => 'required|string|max:20',
-        ]);
+   
 
-        $persona = Persona::create($data);
+public function store(Request $request)
+{
+    $data = $request->validate([
+        'Nombre' => [
+            'required',
+            'string',
+            'max:255',
+            'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+(?:\s[A-Za-zÁÉÍÓÚáéíóúÑñ]+)*$/u',
+        ],
+        'Apellido' => [
+            'required',
+            'string',
+            'max:255',
+            'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+(?:\s[A-Za-zÁÉÍÓÚáéíóúÑñ]+)*$/u',
+        ],
+        'FechaNacimiento' => ['required', 'date'],
+        'Genero' => ['required', 'in:F,M'],
+        'CorreoElectronico' => [
+            'nullable',
+            'email',
+            'max:255',
+            'unique:persona,CorreoElectronico'
+        ],
+        'telefonos.*.Tipo' => [
+            'required',
+            'string',
+            'max:50',
+            'regex:/^(Personal|Trabajo|Otro)$/i'
+        ],
+        'telefonos.*.Numero' => [
+            'required',
+            'regex:/^[0-9]{8}$/',
+        ],
+    ], [
+        'Nombre.regex' => 'El nombre solo debe contener letras y espacios, sin números ni símbolos.',
+        'Apellido.regex' => 'El apellido solo debe contener letras y espacios, sin números ni símbolos.',
+        'telefonos.*.Numero.regex' => 'El número debe tener exactamente 8 dígitos numéricos.',
+        'telefonos.*.Tipo.regex' => 'El tipo de teléfono debe ser Personal, Trabajo u Otro.',
+    ]);
 
-        // Guardar teléfonos
-        if ($request->has('telefonos')) {
-            foreach ($request->input('telefonos') as $tel) {
-                $persona->telefonos()->create([
-                    'Tipo' => $tel['Tipo'],
-                    'Numero' => $tel['Numero'],
-                ]);
-            }
+    $persona = Persona::create($data);
+
+    // Guardar teléfonos
+    if ($request->has('telefonos')) {
+        foreach ($request->input('telefonos') as $tel) {
+            $persona->telefonos()->create([
+                'Tipo' => $tel['Tipo'],
+                'Numero' => $tel['Numero'],
+            ]);
         }
-
-        BitacoraHelper::registrar(
-            'CREAR',
-            'persona',
-            'Se registró una nueva persona ID: ' . $persona->PersonaID,
-            null,
-            $persona->toArray(),
-            'Módulo de Personas'
-        );
-
-        return redirect()
-            ->route('persona.index')
-            ->with('success', 'Persona registrada correctamente.');
     }
+
+    BitacoraHelper::registrar(
+        'CREAR',
+        'persona',
+        'Se registró una nueva persona ID: ' . $persona->PersonaID,
+        null,
+        $persona->toArray(),
+        'Módulo de Personas'
+    );
+
+    return redirect()
+        ->route('persona.index')
+        ->with('success', 'Persona registrada correctamente.');
+}
+
 
     public function update(Request $request, $id)
     {
@@ -155,4 +187,3 @@ class PersonaController extends Controller
         }
     }
 }
-

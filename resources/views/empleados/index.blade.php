@@ -133,6 +133,11 @@
                     <h3 class="font-semibold">Nuevo Empleado</h3>
                 </div>
 
+                {{-- Mostrar error general (si ocurre) --}}
+                @if($errors->has('general'))
+                    <p class="text-red-600 font-bold mb-3">{{ $errors->first('general') }}</p>
+                @endif
+
                 <form method="POST" action="{{ route('empleados.store') }}" class="space-y-4" novalidate>
                     @csrf
 
@@ -324,6 +329,6 @@
             }
         }
     }
-</script>
+    </script>
 
 </x-app-layout>

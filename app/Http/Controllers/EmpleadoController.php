@@ -34,35 +34,70 @@ class EmpleadoController extends Controller
         return view('empleados.index', compact('empleados', 'personas'));
     }
 
-    public function store(Request $request)
-    {
-        $messages = [
-            'PersonaID.unique' => 'La persona ya está registrada como empleado.',
-        ];
+public function store(Request $request)
+{
+    $messages = [
+        'PersonaID.unique'          => 'La persona ya está registrada como empleado.',
+        'PersonaID.required'        => 'Debe seleccionar una persona válida.',
+        'PersonaID.integer'         => 'PersonaID debe ser un número entero válido.',
+        'PersonaID.exists'          => 'La persona seleccionada no existe en el sistema.',
 
-        $data = $request->validate([
-            'PersonaID'         => 'required|integer|exists:persona,PersonaID|unique:empleado,PersonaID',
-            'Departamento'      => 'required|string|max:255',
-            'Cargo'             => 'required|string|max:255',
-            'FechaContratacion' => 'required|date',
-            'Salario'           => 'required|numeric|min:0',
-        ], $messages);
+        'Departamento.required'     => 'El departamento es obligatorio.',
+        'Departamento.string'       => 'El departamento debe ser un texto válido.',
+        'Departamento.max'          => 'El departamento no debe exceder 255 caracteres.',
+        'Departamento.regex'        => 'El departamento solo debe contener letras y espacios.',
 
-        $empleado = Empleado::create($data);
+        'Cargo.required'            => 'El cargo es obligatorio.',
+        'Cargo.string'              => 'El cargo debe ser un texto válido.',
+        'Cargo.max'                 => 'El cargo no debe exceder 255 caracteres.',
+        'Cargo.regex'               => 'El cargo solo debe contener letras y espacios.',
 
-        BitacoraHelper::registrar(
-            'CREAR',
-            'empleado',
-            'Se registró un nuevo empleado ID: ' . $empleado->EmpleadoID,
-            null,
-            $empleado->toArray(),
-            'Módulo de Empleados'
-        );
+        'FechaContratacion.required'=> 'La fecha de contratación es obligatoria.',
+        'FechaContratacion.date'    => 'La fecha de contratación debe ser una fecha válida.',
 
-        return redirect()
-            ->route('empleados.index')
-            ->with('success', 'Empleado registrado correctamente.');
-    }
+        'Salario.required'          => 'El salario es obligatorio.',
+        'Salario.numeric'           => 'El salario debe ser un número válido.',
+        'Salario.min'               => 'El salario no puede ser menor que 0.',
+    ];
+
+    $data = $request->validate([
+        'PersonaID'         => 'required|integer|exists:persona,PersonaID|unique:empleado,PersonaID',
+
+        'Departamento'      => [
+            'required',
+            'string',
+            'max:255',
+            'regex:/^[A-ZÁÉÍÓÚÑa-záéíóúñ\s]+$/u',
+        ],
+
+        'Cargo'             => [
+            'required',
+            'string',
+            'max:255',
+            'regex:/^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/u'
+
+        ],
+
+        'FechaContratacion' => 'required|date',
+        'Salario'           => 'required|numeric|min:0',
+    ], $messages);
+
+    $empleado = Empleado::create($data);
+
+    BitacoraHelper::registrar(
+        'CREAR',
+        'empleado',
+        'Se registró un nuevo empleado ID: ' . $empleado->EmpleadoID,
+        null,
+        $empleado->toArray(),
+        'Módulo de Empleados'
+    );
+
+    return redirect()
+        ->route('empleados.index')
+        ->with('success', 'Empleado registrado correctamente.');
+}
+
 
     public function update(Request $request, $id)
     {
