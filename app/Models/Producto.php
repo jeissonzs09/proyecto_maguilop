@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Model;
+use App\Models\DetallePedido;
 
 class Producto extends Model
 {
@@ -35,6 +37,11 @@ class Producto extends Model
 public function categoria()
 {
     return $this->belongsTo(Categoria::class, 'CategoriaID');
+}
+
+public function detallePedidos()
+{
+    return $this->hasMany(\App\Models\DetallePedido::class, 'ProductoID', 'ProductoID');
 }
 
 

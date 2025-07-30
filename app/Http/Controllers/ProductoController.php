@@ -208,23 +208,30 @@ class ProductoController extends Controller
     }
 
     public function destroy($id)
-    {
-        $producto = Producto::findOrFail($id);
-        $registroEliminado = $producto->toArray();
+{
+    $producto = Producto::findOrFail($id);
 
-        $producto->delete();
-
-        BitacoraHelper::registrar(
-            'ELIMINAR',
-            'producto',
-            'Se eliminó el producto ID: ' . $id,
-            $registroEliminado,
-            null,
-            'Módulo de Productos'
-        );
-
-        return redirect()->route('producto.index')->with('success', 'Producto eliminado correctamente.');
+    // Validar si el producto está asociado a algún detalle_pedido
+    if ($producto->detallePedidos()->exists()) {
+        return redirect()->route('producto.index')->with('error', 'No se puede eliminar este producto porque está asociado a un pedido.');
     }
+
+    $registroEliminado = $producto->toArray();
+
+    $producto->delete();
+
+    BitacoraHelper::registrar(
+        'ELIMINAR',
+        'producto',
+        'Se eliminó el producto ID: ' . $id,
+        $registroEliminado,
+        null,
+        'Módulo de Productos'
+    );
+
+    return redirect()->route('producto.index')->with('success', 'Producto eliminado correctamente.');
+}
+
 
     public function exportarPDF(Request $request)
     {
