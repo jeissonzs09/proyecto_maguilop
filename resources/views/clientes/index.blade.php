@@ -11,18 +11,7 @@
     @endphp
 
     <div class="p-4" x-data="clienteModales()" x-cloak>
-        {{-- Mensajes --}}
-        @if(session('success'))
-            <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded">
-                {{ session('success') }}
-            </div>
-        @endif
 
-        @if(session('error'))
-            <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-800 rounded">
-                {{ session('error') }}
-            </div>
-        @endif
 
         {{-- Controles superiores --}}
         <div class="flex items-center justify-between mb-6">
@@ -91,11 +80,23 @@
                             <td class="px-4 py-2">{{ $cliente->Notas ?? '—' }}</td>
                             <td class="px-4 py-2 text-center space-x-2">
                                 @if($permisos::tienePermiso('Clientes', 'editar'))
-                                    <button @click="abrirEditar(@json($cliente))"
-                                       class="bg-yellow-400 hover:bg-yellow-500 text-white p-2 rounded-full"
-                                       title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
+                                    <button
+    type="button"
+    @click='abrirEditar({
+        ClienteID: {{ $cliente->ClienteID }},
+        NombreCliente: @json($cliente->NombreCliente),
+        PersonaID: {{ $cliente->PersonaID }},
+        Categoria: @json($cliente->Categoria),
+        FechaRegistro: @json($cliente->FechaRegistro),
+        Estado: @json($cliente->Estado),
+        Notas: @json($cliente->Notas),
+    })'
+    class="bg-yellow-400 hover:bg-yellow-500 text-white p-2 rounded-full"
+    title="Editar"
+>
+    <i class="fas fa-edit"></i>
+</button>
+
                                 @endif
                                 @if($permisos::tienePermiso('Clientes', 'eliminar'))
                                     <form action="{{ route('clientes.destroy', $cliente->ClienteID) }}" method="POST" class="inline-block"
@@ -146,9 +147,36 @@
 
                     <div class="mb-4">
                         <label for="NombreCliente" class="block text-gray-700 font-bold mb-2">Nombre del Cliente</label>
-                        <input type="text" name="NombreCliente" id="NombreCliente" placeholder="Ej: Juan Pérez"
-                            class="w-full border rounded px-3 py-2" x-model="cliente.NombreCliente" required>
+                        <input
+    type="text"
+    name="NombreCliente"
+    id="NombreCliente"
+    x-model="cliente.NombreCliente"
+    maxlength="100"
+    title="Solo letras y espacios (2 a 100 caracteres)"
+    @input="
+        let val = $event.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]+/g, '');
+        val = val.replace(/\s+/g, ' ').trimStart();
+        cliente.NombreCliente = val;
+        $event.target.value = val;
+    "
+    required
+    class="w-full border rounded px-3 py-2"
+    :class="{ 'border-red-500': cliente.NombreCliente.length < 2 }"
+/>
+
                     </div>
+
+                    <div class="mb-4">
+    <label for="PersonaID" class="block text-gray-700 font-bold mb-2">Persona</label>
+    <select name="PersonaID" id="PersonaID" class="w-full border rounded px-3 py-2" x-model="cliente.PersonaID" required>
+        <option value="">Seleccione una persona</option>
+        @foreach($personas as $persona)
+            <option value="{{ $persona->PersonaID }}">{{ $persona->NombreCompleto }}</option>
+        @endforeach
+    </select>
+</div>
+
 
                     <!-- Campo Empleado visible solo como texto -->
 <div class="mb-4">
@@ -296,52 +324,115 @@
 
     <!-- Script AlpineJS -->
     <script>
-        
-        function clienteModales() {
-            return {
-                modalCrear: false,
-                modalEditar: false,
-                cliente: {},
+    function clienteModales() {
+        return {
+            modalCrear: false,
+            modalEditar: false,
+            cliente: {},
 
-                abrirCrear() {
-                    this.cliente = {
-                       NombreCliente: '',
-                        PersonaID: '{{ auth()->user()->PersonaID }}',
-                        EmpleadoID: '{{ auth()->user()->EmpleadoID }}',
-                        Categoria: '',
-                        FechaRegistro: '',
-                        Estado: 'Activo',
-                         Notas: ''
-                     };
-                    this.modalCrear = true;
-                },
+            abrirCrear() {
+                this.cliente = {
+    NombreCliente: '',
+    PersonaID: '',
+    EmpleadoID: '{{ auth()->user()->empleado->EmpleadoID ?? '' }}',
+    Categoria: '',
+    FechaRegistro: '',
+    Estado: 'Activo',
+    Notas: ''
+};
+                this.modalCrear = true;
+            },
 
-                abrirEditar(clienteData) {
-                    if(clienteData.FechaRegistro){
-                        clienteData.FechaRegistro = clienteData.FechaRegistro.split(' ')[0];
-                    }
-                    this.cliente = {...clienteData};
-                    this.modalEditar = true;
-                },
-
-                validarCrear(event) {
-              if (!this.cliente.NombreCliente || !this.cliente.Categoria || !this.cliente.FechaRegistro) {
-        alert('Por favor completa todos los campos requeridos.');
-        event.preventDefault();
+            abrirEditar(clienteData) {
+    // Validación robusta de FechaRegistro
+    if (clienteData.FechaRegistro && typeof clienteData.FechaRegistro === 'string') {
+        if (clienteData.FechaRegistro.includes(' ')) {
+            clienteData.FechaRegistro = clienteData.FechaRegistro.split(' ')[0];
+        }
     }
+
+    this.cliente = { ...clienteData };
+    this.modalEditar = true;
+
+    // Validación visual
+    console.log("Modal de edición abierto con:", this.cliente);
 },
 
 
-                validarEditar(event) {
-                    if (!this.cliente.NombreCliente || !this.cliente.PersonaID || !this.cliente.Categoria || !this.cliente.FechaRegistro) {
-                        alert('Por favor completa todos los campos requeridos.');
-                        event.preventDefault();
-                        return;
-                    }
-                    const form = document.getElementById('formEditarCliente');
-                    form.action = /clientes/${this.cliente.ClienteID};
-                },
-            }
+            validarCrear(event) {
+                if (!this.cliente.NombreCliente || !this.cliente.Categoria || !this.cliente.FechaRegistro) {
+                    alert('Por favor completa todos los campos requeridos.');
+                    event.preventDefault();
+                }
+            },
+
+            validarEditar(event) {
+                if (!this.cliente.NombreCliente || !this.cliente.PersonaID || !this.cliente.Categoria || !this.cliente.FechaRegistro) {
+                    alert('Por favor completa todos los campos requeridos.');
+                    event.preventDefault();
+                    return;
+                }
+
+                const form = document.getElementById('formEditarCliente');
+                form.action = `/clientes/${this.cliente.ClienteID}`;
+            },
         }
+    }
+</script>
+
+    @php
+    $toastType = session('error') ? 'error' : (session('success') ? 'success' : null);
+    $toastMsg  = session('error') ?: session('success');
+@endphp
+
+@if($toastType)
+    <div
+        id="toast-empleado"
+        role="status" aria-live="polite"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+               text-white px-10 py-6 rounded-full shadow-2xl flex items-center gap-5
+               z-50 animate-fadeIn text-xl font-semibold ring-1 ring-white/20
+               max-w-[90vw]"
+        style="min-width: 420px; background-color: {{ $toastType === 'error' ? '#dc2626' : '#16a34a' }};"
+        onclick="this.remove()"
+    >
+        @if($toastType === 'error')
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+        @else
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2l4-4" />
+            </svg>
+        @endif
+
+        <span class="leading-snug break-words">{{ $toastMsg }}</span>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            const toast = document.getElementById('toast-empleado');
+            if (toast) {
+                toast.style.transition = 'opacity .5s ease, transform .5s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -50%) scale(.95)';
+                setTimeout(() => toast.remove(), 500);
+            }
+        }, 3200);
     </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -48%) scale(.97); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .animate-fadeIn { animation: fadeIn .28s ease forwards; }
+    </style>
+@endif
+
 </x-app-layout>

@@ -31,7 +31,7 @@ class PersonaController extends Controller
                 });
             })
             ->orderBy('PersonaID', 'desc')
-            ->paginate(5);
+            ->paginate(10);
 
         return view('persona.index', compact('personas'));
     }

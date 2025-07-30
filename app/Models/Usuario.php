@@ -27,5 +27,11 @@ class Usuario extends Authenticatable
     {
         return $this->Contraseña;
     }
+
+    public function persona()
+{
+    return $this->belongsTo(\App\Models\Persona::class, 'PersonaID', 'PersonaID');
+}
+
 }
 

@@ -14,7 +14,7 @@ class BitacoraController extends Controller
             abort(403, 'No tienes permiso para ver esta sección.');
         }
 
-        $bitacoras = Bitacora::paginate(5); // o el número que desees por página
+        $bitacoras = Bitacora::paginate(20); // o el número que desees por página
 
         return view('bitacoras.index', compact('bitacoras'));
     }

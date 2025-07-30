@@ -34,7 +34,7 @@ class ClienteController extends Controller
         });
     }
 
-    $clientes = $query->paginate(5);
+$clientes = $query->orderBy('ClienteID', 'desc')->paginate(5);
     $personas = Persona::all();
 
     // Obtener el nombre del empleado del usuario logueado
@@ -59,30 +59,27 @@ class ClienteController extends Controller
 public function store(Request $request)
 {
     $request->validate([
-        'NombreCliente' => 'required|string|max:100',
-        'Categoria' => 'nullable|in:Regular,Premium,VIP',
-        'FechaRegistro' => 'required|date',
-        'Estado' => 'required|in:Activo,Inactivo',
-        'Notas' => 'nullable|string',
-    ]);
+    'NombreCliente' => 'required|string|max:100',
+    'PersonaID' => 'required|exists:persona,PersonaID',
+    'Categoria' => 'nullable|in:Regular,Premium,VIP',
+    'FechaRegistro' => 'required|date',
+    'Estado' => 'required|in:Activo,Inactivo',
+    'Notas' => 'nullable|string',
+]);
 
     $usuario = auth()->user();
 
-dd([
-    'UsuarioID' => $usuario->id,
-    'EmpleadoID' => $usuario->EmpleadoID,
-    'NombreUsuario' => $usuario->NombreUsuario ?? null,
-]);
-
 
     $cliente = Cliente::create([
-        'NombreCliente' => $request->NombreCliente,
-        'Categoria' => $request->Categoria,
-        'FechaRegistro' => $request->FechaRegistro,
-        'Estado' => $request->Estado,
-        'Notas' => $request->Notas,
-        'EmpleadoID' => $empleadoID,
-    ]);
+    'NombreCliente' => $request->NombreCliente,
+    'PersonaID' => $request->PersonaID,
+    'Categoria' => $request->Categoria,
+    'FechaRegistro' => $request->FechaRegistro,
+    'Estado' => $request->Estado,
+    'Notas' => $request->Notas,
+    'EmpleadoID' => auth()->user()->empleado->EmpleadoID ?? null,
+]);
+
 
     // Registrar en bitácora
     Bitacora::create([

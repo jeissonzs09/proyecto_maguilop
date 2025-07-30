@@ -40,7 +40,7 @@ public function index(Request $request)
         ) LIKE ?", ["%{$search}%"]);
     }
 
-    $reparaciones = $query->paginate(10); // 👈 paginación de 5 registros
+    $reparaciones = $query->orderBy('ReparacionID', 'desc')->paginate(10);
 
 
     // 👇 AÑADE ESTAS DOS LÍNEAS

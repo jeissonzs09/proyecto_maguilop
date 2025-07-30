@@ -30,7 +30,7 @@ class ProductoController extends Controller
               ->orWhereHas('proveedor', fn($q) => $q->where('Descripcion', 'LIKE', "%{$search}%"));
     }
 
-    $productos = $query->paginate(5);
+    $productos = $query->paginate(10);
     $proveedores = Proveedor::all();
 
     return view('producto.index', compact('productos', 'proveedores'));

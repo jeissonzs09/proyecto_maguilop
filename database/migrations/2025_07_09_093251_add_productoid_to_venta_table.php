@@ -9,26 +9,26 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-public function up()
-{
-    Schema::table('venta', function (Illuminate\Database\Schema\Blueprint $table) {
-        $table->unsignedBigInteger('ProductoID')->after('EmpleadoID');
+    public function up()
+    {
+        Schema::table('venta', function (Blueprint $table) {
+            // Comentado porque ya existe la columna ProductoID
+            // $table->unsignedBigInteger('ProductoID')->after('EmpleadoID');
 
-        // Agregar la restricción de clave foránea
-        $table->foreign('ProductoID')->references('ProductoID')->on('producto');
-    });
-}
-
+            // También comentamos la clave foránea si ya está definida
+            // $table->foreign('ProductoID')->references('ProductoID')->on('producto');
+        });
+    }
 
     /**
      * Reverse the migrations.
      */
-public function down()
-{
-    Schema::table('venta', function (Illuminate\Database\Schema\Blueprint $table) {
-        $table->dropForeign(['ProductoID']);
-        $table->dropColumn('ProductoID');
-    });
-}
-
+    public function down()
+    {
+        Schema::table('venta', function (Blueprint $table) {
+            $table->dropForeign(['ProductoID']);
+            $table->dropColumn('ProductoID');
+        });
+    }
 };
+
