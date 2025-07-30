@@ -243,23 +243,24 @@ class PersonaController extends Controller
     }
 
     public function exportarPDF(Request $request)
-    {
-        $search = $request->input('search');
+{
+    $search = $request->input('search');
 
-        $personas = Persona::with('telefonos')
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('Nombre', 'like', "%{$search}%")
-                      ->orWhere('Apellido', 'like', "%{$search}%");
-                });
-            })
-            ->orderBy('PersonaID', 'desc')
-            ->get();
+    $personas = Persona::with('telefonos') // si tienes la relación definida
+        ->when($search, function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('Nombre', 'like', "%{$search}%")
+                  ->orWhere('Apellido', 'like', "%{$search}%");
+            });
+        })
+        ->orderBy('PersonaID', 'desc')
+        ->get();
 
-        $pdf = PDF::loadView('persona.pdf', compact('personas'));
+    $pdf = PDF::loadView('persona.pdf', compact('personas'));
 
-        return $pdf->download('personas.pdf');
-    }
+    return $pdf->download('personas.pdf');
+}
+
 
     public function destroy($id)
     {

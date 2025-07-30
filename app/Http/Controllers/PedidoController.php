@@ -16,7 +16,7 @@ class PedidoController extends Controller
         abort(403, 'No tienes permiso para ver esta sección.');
     }
 
-    $query = Pedido::with(['cliente', 'empleado.persona',  'detalles']);
+    $query = Pedido::with(['cliente', 'empleado.persona', 'detalles']);
 
     if ($request->filled('search')) {
         $search = $request->search;
@@ -40,16 +40,20 @@ class PedidoController extends Controller
                     ->orWhere('Subtotal', 'LIKE', "%{$search}%")
               );
     }
+    
+    $pedidos = $query->orderBy('PedidoID', 'desc')->paginate(5);
 
-    $pedidos = $query->paginate(5);
-
-    // Añade estas variables para que estén disponibles en la vista
     $clientes = \App\Models\Cliente::all();
-    $empleados = \App\Models\Empleado::with('persona')->get();
     $productos = \App\Models\Producto::all();
 
-    return view('pedidos.index', compact('pedidos', 'clientes', 'empleados', 'productos'));
+    // ✅ Obtener empleado logueado
+    $empleado = auth()->user()->empleado ?? null;
+    $empleadoID = $empleado->EmpleadoID ?? null;
+    $empleadoNombre = $empleado?->persona?->NombreCompleto ?? 'Empleado no disponible';
+
+    return view('pedidos.index', compact('pedidos', 'clientes', 'productos', 'empleadoID', 'empleadoNombre'));
 }
+
 
 
     public function create()

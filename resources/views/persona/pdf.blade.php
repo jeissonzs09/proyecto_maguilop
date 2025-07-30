@@ -50,13 +50,13 @@
         }
         table {
             margin: 0 auto;
-            width: 90%;
+            width: 95%;
             border-collapse: collapse;
             font-size: 12px;
         }
         th, td {
             border: 1px solid #333;
-            padding: 7px;
+            padding: 6px;
         }
         th {
             background-color: #f97316;
@@ -90,34 +90,44 @@
     </div>
 
     <div class="metadata">
-        <p><strong>Generado:</strong> {{ date('d/m/Y H:i') }}</p>
-        <p><strong>Total de empleados:</strong> {{ count($empleados) }}</p>
+        <p><strong>Generado:</strong> {{ now()->format('d/m/Y H:i') }}</p>
+        <p><strong>Total de personas:</strong> {{ count($personas) }}</p>
     </div>
 
     <div class="divider"></div>
 
-    <h2 class="table-title">Listado de Empleados</h2>
+    <h2 class="table-title">Listado de Personas</h2>
 
     <table>
         <thead>
             <tr>
                 <th>ID</th>
                 <th>Nombre</th>
-                <th>Departamento</th>
-                <th>Cargo</th>
-                <th>Fecha Contratación</th>
-                <th>Salario (Lps)</th>
+                <th>Apellido</th>
+                <th>Fecha Nac.</th>
+                <th>Género</th>
+                <th>Correo</th>
+                <th>Teléfonos</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($persona as $persona)
+            @foreach($personas as $persona)
                 <tr>
-                    <td>{{ $empleado->EmpleadoID }}</td>
-                    <td>{{ optional($empleado->persona)->NombreCompleto ?? '—' }}</td>
-                    <td>{{ $empleado->Departamento ?? '—' }}</td>
-                    <td>{{ $empleado->Cargo ?? '—' }}</td>
-                    <td>{{ $empleado->FechaContratacion }}</td>
-                    <td>L {{ number_format($empleado->Salario, 2) }}</td>
+                    <td>{{ $persona->PersonaID }}</td>
+                    <td>{{ $persona->Nombre }}</td>
+                    <td>{{ $persona->Apellido }}</td>
+                    <td>{{ \Carbon\Carbon::parse($persona->FechaNacimiento)->format('d/m/Y') }}</td>
+                    <td>{{ $persona->Genero }}</td>
+                    <td>{{ $persona->CorreoElectronico }}</td>
+                    <td>
+                        @if ($persona->telefonos->isNotEmpty())
+                            @foreach ($persona->telefonos as $telefono)
+                                {{ $telefono->Tipo }}: {{ $telefono->Numero }}<br>
+                            @endforeach
+                        @else
+                            —
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>
@@ -130,3 +140,5 @@
 
 </body>
 </html>
+
+

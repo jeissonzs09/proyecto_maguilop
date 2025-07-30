@@ -12,13 +12,28 @@ use App\Helpers\BitacoraHelper;
 class UsuarioController extends Controller
 {
     public function index()
-    {
-        if (!PermisosHelper::tienePermiso('Usuarios', 'ver')) {
+{
+    if (!PermisosHelper::tienePermiso('Usuarios', 'ver')) {
         abort(403, 'No tienes permiso para ver esta sección.');
     }
-        $usuarios = DB::table('usuario')->get();
-        return view('usuarios.index', compact('usuarios'));
-    }
+
+    $usuarios = DB::table('usuario')
+    ->orderByDesc('UsuarioID') // Ordena por el más reciente
+    ->paginate(10);
+
+    $roles = DB::table('tbl_roles')
+        ->where('Estado', 'Activo')
+        ->pluck('Descripcion', 'ID_Rol');
+
+    $empleados = DB::table('empleado')
+        ->join('persona', 'empleado.PersonaID', '=', 'persona.PersonaID')
+        ->select('empleado.EmpleadoID', DB::raw("CONCAT(persona.Nombre, ' ', persona.Apellido) as nombre_completo"))
+        ->get();
+
+        
+    return view('usuarios.index', compact('usuarios', 'roles', 'empleados'));
+}
+
 
 public function create()
 {

@@ -152,16 +152,17 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="EmpleadoID" class="block text-gray-700 font-bold mb-2">Empleado</label>
-                        <select name="EmpleadoID" id="EmpleadoID" class="w-full border rounded px-3 py-2" required>
-                            <option value="">Seleccione un empleado</option>
-                            @foreach ($empleados as $empleado)
-                                <option value="{{ $empleado->EmpleadoID }}">
-                                    {{ $empleado->persona->NombreCompleto ?? 'Empleado #' . $empleado->EmpleadoID }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+    <label class="block text-gray-700 font-bold mb-2">Empleado</label>
+    
+    {{-- Campo oculto con el ID del empleado logueado --}}
+    <input type="hidden" name="EmpleadoID" value="{{ $empleadoID }}">
+
+    {{-- Mostrar el nombre del empleado como texto plano --}}
+    <div class="px-3 py-2 border rounded bg-gray-100">
+        {{ $empleadoNombre }}
+    </div>
+</div>
+
 
                     <div class="mb-4">
                         <label for="FechaPedido" class="block text-gray-700 font-bold mb-2">Fecha Pedido</label>
@@ -265,16 +266,17 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="EmpleadoIDEdit" class="block font-bold mb-1">Empleado</label>
-                            <select id="EmpleadoIDEdit" name="EmpleadoID" class="w-full border rounded px-3 py-2" required x-model="pedidoEditar.EmpleadoID">
-                                <option value="">Seleccione un empleado</option>
-                                @foreach ($empleados as $empleado)
-                                    <option value="{{ $empleado->EmpleadoID }}">
-                                        {{ $empleado->persona->NombreCompleto ?? 'Empleado #' . $empleado->EmpleadoID }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+    <label class="block text-gray-700 font-bold mb-2">Empleado</label>
+
+    {{-- Campo oculto con el ID --}}
+    <input type="hidden" name="EmpleadoID" :value="pedidoEditar.EmpleadoID">
+
+    {{-- Solo mostrar el nombre en texto plano --}}
+    <div class="px-3 py-2 border rounded bg-gray-100 text-sm text-gray-700">
+        <span x-text="pedidoEditar?.empleado?.persona?.NombreCompleto ?? 'Empleado no disponible'"></span>
+    </div>
+</div>
+
 
                         <div class="mb-4">
                             <label for="FechaPedidoEdit" class="block font-bold mb-1">Fecha Pedido</label>
@@ -413,5 +415,60 @@
             }
         }
     </script>
+
+        @php
+    $toastType = session('error') ? 'error' : (session('success') ? 'success' : null);
+    $toastMsg  = session('error') ?: session('success');
+@endphp
+
+@if($toastType)
+    <div
+        id="toast-empleado"
+        role="status" aria-live="polite"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+               text-white px-10 py-6 rounded-full shadow-2xl flex items-center gap-5
+               z-50 animate-fadeIn text-xl font-semibold ring-1 ring-white/20
+               max-w-[90vw]"
+        style="min-width: 420px; background-color: {{ $toastType === 'error' ? '#dc2626' : '#16a34a' }};"
+        onclick="this.remove()"
+    >
+        @if($toastType === 'error')
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+        @else
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2l4-4" />
+            </svg>
+        @endif
+
+        <span class="leading-snug break-words">{{ $toastMsg }}</span>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            const toast = document.getElementById('toast-empleado');
+            if (toast) {
+                toast.style.transition = 'opacity .5s ease, transform .5s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -50%) scale(.95)';
+                setTimeout(() => toast.remove(), 500);
+            }
+        }, 3200);
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -48%) scale(.97); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .animate-fadeIn { animation: fadeIn .28s ease forwards; }
+    </style>
+@endif
 
 </x-app-layout>
