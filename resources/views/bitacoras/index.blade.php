@@ -60,7 +60,6 @@
             <div class="mt-4">
     {{ $bitacoras->links() }}
 </div>
-
         </div>
     </div>
 </x-app-layout>
