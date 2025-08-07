@@ -48,6 +48,15 @@
                 <p class="text-green-400 text-center mt-4 text-sm">{{ session('status') }}</p>
             @endif
 
+            <!-- Errores generales -->
+            @if ($errors->any())
+                <div class="text-red-400 text-sm text-center mt-2">
+                    @foreach ($errors->all() as $error)
+                        <p>{{ $error }}</p>
+                    @endforeach
+                </div>
+            @endif
+
             <!-- Botón de reenviar -->
             <form method="POST" action="{{ route('2fa.code.resend') }}" class="mt-4">
                 @csrf
@@ -56,7 +65,9 @@
                     Reenviar código
                 </button>
             </form>
+
         </div>
     </div>
 </x-guest-layout>
+
 

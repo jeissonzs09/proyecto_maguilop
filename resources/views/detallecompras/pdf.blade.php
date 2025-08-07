@@ -105,8 +105,8 @@
         <thead>
             <tr>
                 <th>ID Detalle</th>
-                <th>ID Compra</th>
-                <th>ID Producto</th>
+                <th>Compra</th>
+                <th>Producto</th>
                 <th>Cantidad</th>
                 <th>Precio Unitario</th>
                 <th>Subtotal</th>
@@ -116,8 +116,15 @@
             @foreach($detalles_compra as $detalle)
                 <tr>
                     <td>{{ $detalle->DetalleCompraID }}</td>
-                    <td>{{ $detalle->CompraID }}</td>
-                    <td>{{ $detalle->ProductoID }}</td>
+                    <td>
+                        @if($detalle->compra)
+                            Compra #{{ $detalle->compra->CompraID }}<br>
+                            {{ \Carbon\Carbon::parse($detalle->compra->FechaCompra)->format('d/m/Y') }}
+                        @else
+                            N/A
+                        @endif
+                    </td>
+                    <td>{{ $detalle->producto->NombreProducto ?? 'Sin nombre' }}</td>
                     <td>{{ $detalle->Cantidad }}</td>
                     <td>L. {{ number_format($detalle->PrecioUnitario, 2) }}</td>
                     <td>L. {{ number_format($detalle->Subtotal, 2) }}</td>

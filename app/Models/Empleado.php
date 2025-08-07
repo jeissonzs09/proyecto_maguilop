@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Persona;
 
 class Empleado extends Model
 {
@@ -10,7 +11,7 @@ class Empleado extends Model
 
     protected $primaryKey = 'EmpleadoID';
 
-    public $timestamps = false; // Si tu tabla no tiene created_at/updated_at
+    public $timestamps = true;
 
     protected $fillable = [
         'PersonaID',

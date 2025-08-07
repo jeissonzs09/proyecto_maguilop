@@ -16,7 +16,7 @@ class Persona extends Model
         'Apellido',
         'FechaNacimiento',
         'Genero',
-        'CorreoElectronico',
+        'email',
     ];
 
     // Relación con Telefonos (uno a muchos)

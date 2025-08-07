@@ -71,11 +71,12 @@
                                     @endif
 
                                     {{-- Descargar --}}
-                                    <a href="{{ asset('storage/backups/' . $backup->NombreArchivo) }}"
-                                       download class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full"
-                                       title="Descargar">
-                                        <i class="fas fa-download"></i>
-                                    </a>
+                                    <a href="{{ route('backups.download', $backup->NombreArchivo) }}"
+   class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full"
+   title="Descargar">
+    <i class="fas fa-download"></i>
+</a>
+
                                 </div>
                             </td>
                         </tr>

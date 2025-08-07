@@ -82,7 +82,7 @@
                             <td class="px-4 py-2">{{ $persona->Apellido }}</td>
                             <td class="px-4 py-2 text-center">{{ \Carbon\Carbon::parse($persona->FechaNacimiento)->format('d/m/Y') }}</td>
                             <td class="px-4 py-2 text-center">{{ $persona->Genero }}</td>
-                            <td class="px-4 py-2">{{ $persona->CorreoElectronico }}</td>
+                            <td class="px-4 py-2">{{ $persona->email }}</td>
                             <td class="px-4 py-2">
                                 <ul>
                                     @foreach($persona->telefonos as $telefono)
@@ -163,20 +163,38 @@
                     <div>
                         <label for="Nombre" class="block text-gray-700 font-bold mb-2">Nombre</label>
                         <input
-                            type="text" name="Nombre" id="Nombre" required
-                            value="{{ old('Nombre') }}"
-                            x-model="createForm.Nombre"
-                            maxlength="60"
-                            pattern="^[A-Za-z ]{2,}$"
-                            title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
-                            @input="
-                                createForm.Nombre = $event.target.value
-                                  .replace(/[^A-Za-z ]/g,'')
-                                  .replace(/\s+/g,' ')
-                                  .trimStart()
-                            "
-                            class="w-full border rounded px-3 py-2 @error('Nombre') border-red-500 @enderror"
-                        />
+    type="text" name="Nombre" id="Nombre" required
+    x-model="createForm.Nombre"
+    maxlength="60"
+    pattern="^[A-Za-z ]{2,}$"
+    title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
+    @input="
+    let input = $event.target;
+    let valor = input.value.replace(/[^A-Za-z ]/g, '').replace(/\s+/g, ' ').trimStart();
+
+    // Detectar 3 o más letras iguales seguidas
+    if (/(.)\1\1+/i.test(valor)) {
+        errorNombreRepetido = true;
+
+        // Eliminar el último carácter que rompió la regla
+        input.value = createForm.Nombre; // Restaurar valor anterior válido
+    } else {
+        createForm.Nombre = valor;
+        errorNombreRepetido = false;
+    }
+"
+
+    class="w-full border rounded px-3 py-2"
+    :class="{ 'border-red-500': errorNombreRepetido }"
+/>
+
+<template x-if="errorNombreRepetido">
+    <p class="text-red-500 text-sm mt-1">
+        No se permiten más de 2 letras iguales seguidas.
+    </p>
+</template>
+
+
                         @error('Nombre')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -198,6 +216,11 @@
                             class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror"
                         />
                         @error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <template x-if="/(.)\1\1+/i.test(createForm.Apellido)">
+    <p class="text-red-500 text-sm mt-1">
+        No se permiten más de 2 letras iguales seguidas.
+    </p>
+</template>
                     </div>
 
                     <div>
@@ -209,6 +232,11 @@
                             class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror"
                         />
                         @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+<template x-if="createForm.FechaNacimiento && !esMayorDeEdad">
+    <p class="text-red-500 text-sm mt-1">
+        Debe tener al menos 18 años de edad.
+    </p>
+</template>                        
                     </div>
 
                     <div>
@@ -235,25 +263,33 @@
                     <div>
                         <label for="CorreoElectronico" class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
                         <input
-    type="email" name="CorreoElectronico" id="CorreoElectronico" required
-    x-model="createForm.CorreoElectronico"
+    type="email" name="email" id="CorreoElectronico" required
+    x-model="createForm.email"
     maxlength="100"
-    pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-    title="Debe contener @ y un dominio valido"
+    pattern="^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$"
+    title="Debe tener al menos 4 caracteres antes y después de @ y un dominio válido"
     @input="createForm.CorreoElectronico = $event.target.value.trim()"
     class="w-full border rounded px-3 py-2"
     :class="{
-        'border-red-500': createForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.CorreoElectronico),
-        'border-gray-300': !(createForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.CorreoElectronico))
+        'border-red-500': createForm.CorreoElectronico && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(createForm.CorreoElectronico),
+        'border-gray-300': !(createForm.CorreoElectronico && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(createForm.CorreoElectronico))
     }"
 />
+
 <p
-    x-show="createForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.CorreoElectronico)"
+    x-show="createForm.CorreoElectronico && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(createForm.CorreoElectronico)"
+    class="text-red-600 text-xs mt-1"
+>
+    El correo ingresado no cumple con los requisitos
+</p>
+
+<p
+    x-show="createForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.email)"
     class="text-red-600 text-xs mt-1"
 >
     Ingresa un correo valido que lleve @ y dominio (ej. usuario@dominio.com).
 </p>
-@error('CorreoElectronico')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+@error('email')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
 
                     </div>
 
@@ -307,14 +343,18 @@
                         </button>
                         <button type="submit"
                                 :disabled="
-                                    !/^[A-Za-z ]{2,}$/.test(createForm.Nombre) ||
-                                    !/^[A-Za-z ]{2,}$/.test(createForm.Apellido) ||
-                                    !createForm.FechaNacimiento ||
-                                    !/^[FM]$/.test(createForm.Genero || '') ||
-                                    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.CorreoElectronico || '') ||
-                                    telefonos.length === 0 ||
-                                    telefonos.some(t => !/^\d{8}$/.test(t.Numero || ''))
-                                "
+    !/^[A-Za-z ]{2,}$/.test(createForm.Nombre) ||
+    /(.)\1\1+/i.test(createForm.Nombre) ||
+    !/^[A-Za-z ]{2,}$/.test(createForm.Apellido) ||
+    /(.)\1\1+/i.test(createForm.Apellido) ||
+    !createForm.FechaNacimiento ||
+    !esMayorDeEdad ||
+    !/^[FM]$/.test(createForm.Genero || '') ||
+    !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(createForm.email || '') ||
+    telefonos.length === 0 ||
+    telefonos.some(t => !/^\d{8}$/.test(t.Numero || ''))
+"
+
                                 class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
                             Guardar
                         </button>
@@ -352,48 +392,82 @@
                 <div>
                     <label for="Nombre" class="block text-gray-700 font-bold mb-2">Nombre</label>
                     <input
-                        type="text" name="Nombre" id="Nombre" required
-                        x-model="editForm.Nombre"
-                        maxlength="60"
-                        pattern="^[A-Za-z ]{2,}$"
-                        title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
-                        @input="
-                            editForm.Nombre = $event.target.value
-                              .replace(/[^A-Za-z ]/g,'')
-                              .replace(/\s+/g,' ')
-                              .trimStart()
-                        "
-                        class="w-full border rounded px-3 py-2 @error('Nombre') border-red-500 @enderror"
-                    />
+    type="text" name="Nombre" id="Nombre" required
+    x-model="editForm.Nombre"
+    maxlength="60"
+    pattern="^[A-Za-z ]{2,}$"
+    title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
+    @input="
+        let input = $event.target;
+        let valor = input.value.replace(/[^A-Za-z ]/g, '').replace(/\s+/g, ' ').trimStart();
+
+        if (/(.)\1\1+/i.test(valor)) {
+            errorNombreRepetidoEdit = true;
+            input.value = editForm.Nombre;
+        } else {
+            editForm.Nombre = valor;
+            errorNombreRepetidoEdit = false;
+        }
+    "
+    class="w-full border rounded px-3 py-2"
+    :class="{ 'border-red-500': errorNombreRepetidoEdit }"
+/>
+<template x-if="errorNombreRepetidoEdit">
+    <p class="text-red-500 text-sm mt-1">
+        No se permiten más de 2 letras iguales seguidas.
+    </p>
+</template>
+
+
                     @error('Nombre')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
                     <label for="Apellido" class="block text-gray-700 font-bold mb-2">Apellido</label>
                     <input
-                        type="text" name="Apellido" id="Apellido" required
-                        x-model="editForm.Apellido"
-                        maxlength="60"
-                        pattern="^[A-Za-z ]{2,}$"
-                        title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
-                        @input="
-                            editForm.Apellido = $event.target.value
-                              .replace(/[^A-Za-z ]/g,'')
-                              .replace(/\s+/g,' ')
-                              .trimStart()
-                        "
-                        class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror"
-                    />
-                    @error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+    type="text" name="Apellido" id="Apellido" required
+    x-model="editForm.Apellido"
+    maxlength="60"
+    pattern="^[A-Za-z ]{2,}$"
+    title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
+    @input="
+        let valor = $event.target.value.replace(/[^A-Za-z ]/g,'').replace(/\s+/g,' ').trimStart();
+
+        if (/(.)\1\1+/i.test(valor)) {
+            errorApellidoRepetidoEdit = true;
+        } else {
+            editForm.Apellido = valor;
+            errorApellidoRepetidoEdit = false;
+        }
+    "
+    class="w-full border rounded px-3 py-2"
+    :class="{ 'border-red-500': errorApellidoRepetidoEdit }"
+/>
+<template x-if="errorApellidoRepetidoEdit">
+    <p class="text-red-500 text-sm mt-1">
+        No se permiten más de 2 letras iguales seguidas.
+    </p>
+</template>
+
+@error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+
+
                 </div>
 
                 <div>
                     <label for="FechaNacimiento" class="block text-gray-700 font-bold mb-2">Fecha de Nacimiento</label>
                     <input
-                        type="date" name="FechaNacimiento" id="FechaNacimiento" required
-                        x-model="editForm.FechaNacimiento"
-                        class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror"
-                    />
+    type="date" name="FechaNacimiento" id="FechaNacimiento" required
+    x-model="editForm.FechaNacimiento"
+    class="w-full border rounded px-3 py-2"
+    :class="{ 'border-red-500': editForm.FechaNacimiento && !esMayorDeEdadEdit }"
+/>
+<template x-if="editForm.FechaNacimiento && !esMayorDeEdadEdit">
+    <p class="text-red-500 text-sm mt-1">
+        Debe tener al menos 18 años de edad.
+    </p>
+</template>
+
                     @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
 
@@ -417,25 +491,30 @@
                 <div>
                     <label for="CorreoElectronico" class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
                     <input
-    type="email" name="CorreoElectronico" id="CorreoElectronico" required
-    x-model="editForm.CorreoElectronico"
+    type="email"
+    name="email"
+    id="email"
+    required
+    x-model="editForm.email"
     maxlength="100"
-    pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-    title="Debe contener @ y un dominio valido"
-    @input="editForm.CorreoElectronico = $event.target.value.trim()"
+    @input="editForm.email = $event.target.value.trim()"
     class="w-full border rounded px-3 py-2"
     :class="{
-        'border-red-500': editForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.CorreoElectronico),
-        'border-gray-300': !(editForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.CorreoElectronico))
+        'border-red-500': editForm.email && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email),
+        'border-gray-300': !(editForm.email && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email))
     }"
 />
-<p
-    x-show="editForm.CorreoElectronico && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.CorreoElectronico)"
-    class="text-red-600 text-xs mt-1"
->
-    Ingresa un correo valido que lleve @ y dominio (ej. usuario@dominio.com).
-</p>
-@error('CorreoElectronico')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+
+<template x-if="editForm.email && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email)">
+    <p class="text-red-600 text-xs mt-1">
+        El correo debe tener al menos 4 caracteres antes y después de la @ y un dominio válido.
+    </p>
+</template>
+
+@error('email')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+
+
+
 
                 </div>
 
@@ -488,17 +567,22 @@
                             class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancelar
                     </button>
                     <button type="submit"
-                            :disabled="
-                                !/^[A-Za-z ]{2,}$/.test(editForm.Nombre || '') ||
-                                !/^[A-Za-z ]{2,}$/.test(editForm.Apellido || '') ||
-                                !editForm.FechaNacimiento ||
-                                !/^[FM]$/.test(editForm.Genero || '') ||
-                                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.CorreoElectronico || '') ||
-                                (editForm.telefonos || []).length === 0 ||
-                                (editForm.telefonos || []).some(t => !/^\d{8}$/.test(t.Numero || ''))
-                            "
-                            class="px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed">Actualizar
-                    </button>
+    :disabled="
+        !/^[A-Za-z ]{2,}$/.test(editForm.Nombre || '') ||
+        /(.)\1\1+/i.test(editForm.Nombre || '') ||
+        !/^[A-Za-z ]{2,}$/.test(editForm.Apellido || '') ||
+        /(.)\1\1+/i.test(editForm.Apellido || '') ||
+        !editForm.FechaNacimiento ||
+        !esMayorDeEdadEdit ||
+        !/^[FM]$/.test(editForm.Genero || '') ||
+        !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email || '') ||
+        (editForm.telefonos || []).length === 0 ||
+        (editForm.telefonos || []).some(t => !/^\d{8}$/.test(t.Numero || ''))
+    "
+    class="px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed">
+    Actualizar
+</button>
+
                 </div>
             </form>
             </div>
@@ -510,84 +594,112 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
     <script>
-    function personasModal() {
-        return {
-            search: @json(request('search')),
-            isCreateModalOpen: false,
-            isEditModalOpen: false,
+   function personasModal() {
 
-            // Estado para crear
-            createForm: {
-                Nombre: @json(old('Nombre', '')),
-                Apellido: @json(old('Apellido', '')),
-                FechaNacimiento: @json(old('FechaNacimiento', '')),
-                Genero: @json(old('Genero', '')),
-                CorreoElectronico: @json(old('CorreoElectronico', '')),
-            },
+    function calcularEdad(fecha) {
+        if (!fecha) return false;
 
-            // Teléfonos (crear)
-            telefonos: @json(old('telefonos', [ ['Tipo' => 'Personal', 'Numero' => ''] ])),
+        const nacimiento = new Date(fecha);
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const m = hoy.getMonth() - nacimiento.getMonth();
 
-            // Estado para editar
-            editForm: {
-                PersonaID: '',
-                Nombre: '',
-                Apellido: '',
-                FechaNacimiento: '',
-                Genero: '',
-                CorreoElectronico: '',
-                telefonos: []
-            },
+        if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+            edad--;
+        }
 
-            openCreateModal() {
-                this.isCreateModalOpen = true;
-                // Si quieres limpiar al abrir manualmente:
-                // this.createForm = { Nombre: '', Apellido: '', FechaNacimiento: '', Genero: '', CorreoElectronico: '' };
-                // this.telefonos = [{ Tipo: 'Personal', Numero: '' }];
-            },
+        return edad >= 18;
+    }
 
-            closeCreateModal() {
-                this.isCreateModalOpen = false;
-            },
+    return {
+        search: @json(request('search')),
+        isCreateModalOpen: false,
+        isEditModalOpen: false,
 
-            openEditModal(persona) {
-                this.editForm = {
-                    PersonaID: persona.PersonaID,
-                    Nombre: (persona.Nombre || ''),
-                    Apellido: (persona.Apellido || ''),
-                    FechaNacimiento: persona.FechaNacimiento || '',
-                    Genero: (persona.Genero || '').trim().toUpperCase(),
-                    CorreoElectronico: persona.CorreoElectronico || '',
-                    telefonos: persona.telefonos ? JSON.parse(JSON.stringify(persona.telefonos)) : []
-                };
-                this.isEditModalOpen = true;
-            },
+        errorNombreRepetido: false,
+        errorNombreRepetidoEdit: false,
+        errorApellidoRepetidoEdit: false,
 
-            closeEditModal() {
-                this.isEditModalOpen = false;
-            },
+        
 
-            addTelefono() {
-                this.telefonos.push({ Tipo: 'Personal', Numero: '' });
-            },
+        // Estado para crear
+        createForm: {
+            Nombre: @json(old('Nombre', '')),
+            Apellido: @json(old('Apellido', '')),
+            FechaNacimiento: @json(old('FechaNacimiento', '')),
+            Genero: @json(old('Genero', '')),
+            email: @json(old('email', '')),
+        },
 
-            removeTelefono(index) {
-                this.telefonos.splice(index, 1);
-            },
+        // Teléfonos (crear)
+        telefonos: @json(old('telefonos', [ ['Tipo' => 'Personal', 'Numero' => ''] ])),
 
-            addTelefonoEdit() {
-                this.editForm.telefonos.push({ Tipo: 'Personal', Numero: '' });
-            },
+        // Estado para editar
+        editForm: {
+            PersonaID: '',
+            Nombre: '',
+            Apellido: '',
+            FechaNacimiento: '',
+            Genero: '',
+            email: '',
+            telefonos: []
+        },
 
-            removeTelefonoEdit(index) {
-                this.editForm.telefonos.splice(index, 1);
-            },
+        // Validación edad mínima
+        get esMayorDeEdad() {
+            return calcularEdad(this.createForm.FechaNacimiento);
+        },
 
-            actionUrl() {
-                return `/persona/${this.editForm.PersonaID}`;
-            }
+        get esMayorDeEdadEdit() {
+            return calcularEdad(this.editForm.FechaNacimiento);
+        },
+
+        openCreateModal() {
+            this.isCreateModalOpen = true;
+        },
+
+        closeCreateModal() {
+            this.isCreateModalOpen = false;
+        },
+
+        openEditModal(persona) {
+            this.editForm = {
+                PersonaID: persona.PersonaID,
+                Nombre: (persona.Nombre || ''),
+                Apellido: (persona.Apellido || ''),
+                FechaNacimiento: persona.FechaNacimiento || '',
+                Genero: (persona.Genero || '').trim().toUpperCase(),
+                email: persona.email || '',
+                telefonos: persona.telefonos ? JSON.parse(JSON.stringify(persona.telefonos)) : []
+            };
+            this.isEditModalOpen = true;
+        },
+
+        closeEditModal() {
+            this.isEditModalOpen = false;
+        },
+
+        addTelefono() {
+            this.telefonos.push({ Tipo: 'Personal', Numero: '' });
+        },
+
+        removeTelefono(index) {
+            this.telefonos.splice(index, 1);
+        },
+
+        addTelefonoEdit() {
+            this.editForm.telefonos.push({ Tipo: 'Personal', Numero: '' });
+        },
+
+        removeTelefonoEdit(index) {
+            this.editForm.telefonos.splice(index, 1);
+        },
+
+        actionUrl() {
+            return `/persona/${this.editForm.PersonaID}`;
         }
     }
+}
     </script>
 
 @php

@@ -24,7 +24,6 @@ class PersonaController extends Controller
 
         $personas = Persona::with('telefonos')
             ->when($search, function ($query) use ($search) {
-                // Agrupar condiciones de búsqueda
                 $query->where(function ($q) use ($search) {
                     $q->where('Nombre', 'like', "%{$search}%")
                       ->orWhere('Apellido', 'like', "%{$search}%");
@@ -38,45 +37,40 @@ class PersonaController extends Controller
 
     public function store(Request $request)
     {
-        // ---- Limpieza previa ----
         $clean = function ($v) {
             if ($v === null) return $v;
             $v = trim($v);
             return preg_replace('/\s+/', ' ', $v);
         };
 
-        // Normalizar entradas principales
         $request->merge([
-            'Nombre'            => $clean($request->input('Nombre')),
-            'Apellido'          => $clean($request->input('Apellido')),
-            'CorreoElectronico' => $clean($request->input('CorreoElectronico')),
+            'Nombre' => $clean($request->input('Nombre')),
+            'Apellido' => $clean($request->input('Apellido')),
+            'email' => $clean($request->input('email')),
         ]);
 
-        // Limpiar teléfonos (solo dígitos, máx 8)
         $telefonos = $request->input('telefonos', []);
         foreach ($telefonos as $i => $tel) {
             $numeroLimpio = isset($tel['Numero']) ? preg_replace('/\D+/', '', $tel['Numero']) : '';
             $telefonos[$i]['Numero'] = mb_substr($numeroLimpio, 0, 8);
-            $telefonos[$i]['Tipo']   = isset($tel['Tipo']) ? $clean($tel['Tipo']) : null;
+            $telefonos[$i]['Tipo'] = isset($tel['Tipo']) ? $clean($tel['Tipo']) : null;
         }
         $request->merge(['telefonos' => $telefonos]);
 
-        // ---- Validación ----
         $data = $request->validate([
             'Nombre' => [
                 'required', 'string', 'max:255',
-                // Solo letras A-Z y espacios (sin acentos/símbolos/números)
                 'regex:/^[A-Za-z]+(?:\s[A-Za-z]+)*$/',
             ],
             'Apellido' => [
                 'required', 'string', 'max:255',
                 'regex:/^[A-Za-z]+(?:\s[A-Za-z]+)*$/',
             ],
-            'FechaNacimiento'  => ['required', 'date'],
-            'Genero'           => ['required', 'in:F,M'],
-            'CorreoElectronico'=> [
+            'FechaNacimiento' => ['required', 'date'],
+            'Genero' => ['required', 'in:F,M'],
+            'email' => [
                 'required', 'email', 'max:255',
-                'unique:persona,CorreoElectronico',
+                'unique:persona,email',
             ],
             'telefonos' => ['required', 'array', 'min:1'],
             'telefonos.*.Tipo' => [
@@ -87,30 +81,29 @@ class PersonaController extends Controller
                 'required', 'regex:/^[0-9]{8}$/',
             ],
         ], [
-            'Nombre.regex'   => 'El nombre solo debe contener letras (A-Z) y espacios.',
+            'Nombre.regex' => 'El nombre solo debe contener letras (A-Z) y espacios.',
             'Apellido.regex' => 'El apellido solo debe contener letras (A-Z) y espacios.',
-            'CorreoElectronico.required' => 'El correo es obligatorio.',
-            'CorreoElectronico.email'    => 'Ingresa un correo válido que lleve @ y dominio.',
-            'CorreoElectronico.unique'   => 'Este correo ya está registrado.',
-            'telefonos.required'         => 'Agrega al menos un teléfono.',
-            'telefonos.*.Numero.regex'   => 'Cada teléfono debe tener exactamente 8 dígitos.',
-            'telefonos.*.Tipo.regex'     => 'El tipo de teléfono debe ser Personal, Trabajo u Otro.',
+            'email.required' => 'El correo es obligatorio.',
+            'email.email' => 'Ingresa un correo válido que lleve @ y dominio.',
+            'email.unique' => 'Este correo ya está registrado.',
+            'telefonos.required' => 'Agrega al menos un teléfono.',
+            'telefonos.*.Numero.regex' => 'Cada teléfono debe tener exactamente 8 dígitos.',
+            'telefonos.*.Tipo.regex' => 'El tipo de teléfono debe ser Personal, Trabajo u Otro.',
         ]);
 
-        // ---- Persistencia con transacción ----
         DB::beginTransaction();
         try {
             $persona = Persona::create([
-                'Nombre'            => $data['Nombre'],
-                'Apellido'          => $data['Apellido'],
-                'FechaNacimiento'   => $data['FechaNacimiento'],
-                'Genero'            => $data['Genero'],
-                'CorreoElectronico' => $data['CorreoElectronico'],
+                'Nombre' => $data['Nombre'],
+                'Apellido' => $data['Apellido'],
+                'FechaNacimiento' => $data['FechaNacimiento'],
+                'Genero' => $data['Genero'],
+                'email' => $data['email'],
             ]);
 
             foreach ($data['telefonos'] as $tel) {
                 $persona->telefonos()->create([
-                    'Tipo'   => ucfirst(strtolower($tel['Tipo'])),
+                    'Tipo' => ucfirst(strtolower($tel['Tipo'])),
                     'Numero' => $tel['Numero'],
                 ]);
             }
@@ -142,7 +135,6 @@ class PersonaController extends Controller
     {
         $persona = Persona::findOrFail($id);
 
-        // ---- Limpieza previa ----
         $clean = function ($v) {
             if ($v === null) return $v;
             $v = trim($v);
@@ -150,20 +142,19 @@ class PersonaController extends Controller
         };
 
         $request->merge([
-            'Nombre'            => $clean($request->input('Nombre')),
-            'Apellido'          => $clean($request->input('Apellido')),
-            'CorreoElectronico' => $clean($request->input('CorreoElectronico')),
+            'Nombre' => $clean($request->input('Nombre')),
+            'Apellido' => $clean($request->input('Apellido')),
+            'email' => $clean($request->input('email')),
         ]);
 
         $telefonos = $request->input('telefonos', []);
         foreach ($telefonos as $i => $tel) {
             $numeroLimpio = isset($tel['Numero']) ? preg_replace('/\D+/', '', $tel['Numero']) : '';
             $telefonos[$i]['Numero'] = mb_substr($numeroLimpio, 0, 8);
-            $telefonos[$i]['Tipo']   = isset($tel['Tipo']) ? $clean($tel['Tipo']) : null;
+            $telefonos[$i]['Tipo'] = isset($tel['Tipo']) ? $clean($tel['Tipo']) : null;
         }
         $request->merge(['telefonos' => $telefonos]);
 
-        // ---- Validación ----
         $data = $request->validate([
             'Nombre' => [
                 'required', 'string', 'max:255',
@@ -173,11 +164,11 @@ class PersonaController extends Controller
                 'required', 'string', 'max:255',
                 'regex:/^[A-Za-z]+(?:\s[A-Za-z]+)*$/',
             ],
-            'FechaNacimiento'   => ['required', 'date'],
-            'Genero'            => ['required', 'in:F,M'],
-            'CorreoElectronico' => [
+            'FechaNacimiento' => ['required', 'date'],
+            'Genero' => ['required', 'in:F,M'],
+            'email' => [
                 'required', 'email', 'max:255',
-                'unique:persona,CorreoElectronico,' . $persona->PersonaID . ',PersonaID',
+                'unique:persona,email,' . $persona->PersonaID . ',PersonaID',
             ],
             'telefonos' => ['required', 'array', 'min:1'],
             'telefonos.*.Tipo' => [
@@ -188,14 +179,14 @@ class PersonaController extends Controller
                 'required', 'regex:/^[0-9]{8}$/',
             ],
         ], [
-            'Nombre.regex'   => 'El nombre solo debe contener letras (A-Z) y espacios.',
+            'Nombre.regex' => 'El nombre solo debe contener letras (A-Z) y espacios.',
             'Apellido.regex' => 'El apellido solo debe contener letras (A-Z) y espacios.',
-            'CorreoElectronico.required' => 'El correo es obligatorio.',
-            'CorreoElectronico.email'    => 'Ingresa un correo válido que lleve @ y dominio.',
-            'CorreoElectronico.unique'   => 'Este correo ya está registrado.',
-            'telefonos.required'         => 'Agrega al menos un teléfono.',
-            'telefonos.*.Numero.regex'   => 'Cada teléfono debe tener exactamente 8 dígitos.',
-            'telefonos.*.Tipo.regex'     => 'El tipo de teléfono debe ser Personal, Trabajo u Otro.',
+            'email.required' => 'El correo es obligatorio.',
+            'email.email' => 'Ingresa un correo válido que lleve @ y dominio.',
+            'email.unique' => 'Este correo ya está registrado.',
+            'telefonos.required' => 'Agrega al menos un teléfono.',
+            'telefonos.*.Numero.regex' => 'Cada teléfono debe tener exactamente 8 dígitos.',
+            'telefonos.*.Tipo.regex' => 'El tipo de teléfono debe ser Personal, Trabajo u Otro.',
         ]);
 
         $antes = $persona->toArray();
@@ -203,18 +194,17 @@ class PersonaController extends Controller
         DB::beginTransaction();
         try {
             $persona->update([
-                'Nombre'            => $data['Nombre'],
-                'Apellido'          => $data['Apellido'],
-                'FechaNacimiento'   => $data['FechaNacimiento'],
-                'Genero'            => $data['Genero'],
-                'CorreoElectronico' => $data['CorreoElectronico'],
+                'Nombre' => $data['Nombre'],
+                'Apellido' => $data['Apellido'],
+                'FechaNacimiento' => $data['FechaNacimiento'],
+                'Genero' => $data['Genero'],
+                'email' => $data['email'],
             ]);
 
-            // Estrategia simple: borrar y re-crear teléfonos
             $persona->telefonos()->delete();
             foreach ($data['telefonos'] as $tel) {
                 $persona->telefonos()->create([
-                    'Tipo'   => ucfirst(strtolower($tel['Tipo'])),
+                    'Tipo' => ucfirst(strtolower($tel['Tipo'])),
                     'Numero' => $tel['Numero'],
                 ]);
             }
@@ -243,24 +233,23 @@ class PersonaController extends Controller
     }
 
     public function exportarPDF(Request $request)
-{
-    $search = $request->input('search');
+    {
+        $search = $request->input('search');
 
-    $personas = Persona::with('telefonos') // si tienes la relación definida
-        ->when($search, function ($query) use ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('Nombre', 'like', "%{$search}%")
-                  ->orWhere('Apellido', 'like', "%{$search}%");
-            });
-        })
-        ->orderBy('PersonaID', 'desc')
-        ->get();
+        $personas = Persona::with('telefonos')
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('Nombre', 'like', "%{$search}%")
+                      ->orWhere('Apellido', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('PersonaID', 'desc')
+            ->get();
 
-    $pdf = PDF::loadView('persona.pdf', compact('personas'));
+        $pdf = PDF::loadView('persona.pdf', compact('personas'));
 
-    return $pdf->download('personas.pdf');
-}
-
+        return $pdf->download('personas.pdf');
+    }
 
     public function destroy($id)
     {
