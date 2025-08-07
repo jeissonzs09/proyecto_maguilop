@@ -2,7 +2,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="text-xl font-bold flex items-center gap-2">
-            <i class="fas fa-users"></i> Clientes Commit
+            <i class="fas fa-users"></i> Clientes
         </h2>
     </x-slot>
 
