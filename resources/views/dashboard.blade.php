@@ -183,5 +183,3 @@ new Chart(repCtx, {
     @endpush
     
 </x-app-layout>
-
-

@@ -1,4 +1,3 @@
-
 <x-app-layout>
     <x-slot name="header">
         <h2 class="text-xl font-bold flex items-center gap-2">
@@ -230,155 +229,221 @@
             </div>
         </div>
 
-        <!-- MODAL EDITAR CLIENTE -->
-        <div
-            x-show="modalEditar"
-            x-transition
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-            x-cloak
+<!-- MODAL EDITAR CLIENTE -->
+<div
+    x-show="modalEditar"
+    x-transition
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    x-cloak
+>
+  <div
+    @click.away="modalEditar = false"
+    class="bg-white p-6 rounded-md w-full max-w-2xl shadow-lg overflow-y-auto max-h-[90vh] relative"
+  >
+    <!-- Cerrar -->
+    <button
+      @click="modalEditar = false"
+      class="absolute top-3 right-3 text-gray-600 hover:text-gray-900 font-bold text-xl"
+      aria-label="Cerrar modal"
+    >&times;</button>
+
+    <h2 class="text-xl font-bold mb-4">
+      ✏ Editar Cliente #<span x-text="cliente.ClienteID"></span>
+    </h2>
+
+    {{-- Errores globales (validación Laravel) --}}
+    @if ($errors->any())
+      <div class="mb-4 rounded border border-red-300 bg-red-50 text-red-700 p-3 text-sm">
+        <ul class="list-disc pl-5">
+          @foreach ($errors->all() as $e)
+            <li>{{ $e }}</li>
+          @endforeach
+        </ul>
+      </div>
+    @endif
+
+    <form
+      id="formEditarCliente"
+      method="POST"
+      :action="`{{ url('clientes') }}/${cliente.ClienteID}`"
+      @submit="validarEditar"
+      class="space-y-6"
+    >
+      @csrf
+      @method('PUT')
+
+      <div>
+        <label for="NombreCliente" class="block text-gray-700 font-semibold mb-2">Nombre Cliente</label>
+        <input
+          type="text"
+          name="NombreCliente"
+          id="NombreCliente"
+          x-model="cliente.NombreCliente"
+          required
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+        />
+        @error('NombreCliente')
+          <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
+
+      <div>
+        <label for="PersonaID" class="block text-gray-700 font-semibold mb-2">Persona</label>
+        <select
+          name="PersonaID"
+          id="PersonaID"
+          x-model="cliente.PersonaID"
+          required
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200"
         >
-            <div
-                @click.away="modalEditar = false"
-                class="bg-white p-6 rounded-md w-full max-w-2xl shadow-lg overflow-y-auto max-h-[90vh] relative"
-            >
-                <!-- Botón cerrar X -->
-                <button
-                    @click="modalEditar = false"
-                    class="absolute top-3 right-3 text-gray-600 hover:text-gray-900 font-bold text-xl"
-                    title="Cerrar"
-                    aria-label="Cerrar modal"
-                >
-                    &times;
-                </button>
+          <option value="">Seleccione una persona</option>
+          @foreach ($personas as $persona)
+            <option value="{{ $persona->PersonaID }}">{{ $persona->NombreCompleto }}</option>
+          @endforeach
+        </select>
+        @error('PersonaID')
+          <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-                <h2 class="text-xl font-bold mb-4">✏ Editar Cliente #<span x-text="cliente.ClienteID"></span></h2>
+      <div>
+        <label for="Categoria" class="block text-gray-700 font-semibold mb-2">Categoría</label>
+        <select
+          name="Categoria"
+          id="Categoria"
+          x-model="cliente.Categoria"
+          required
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+        >
+          <option value="" disabled>Selecciona una categoría</option>
+          <option value="Regular">Regular</option>
+          <option value="Premium">Premium</option>
+          <option value="VIP">VIP</option>
+        </select>
+        @error('Categoria')
+          <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-                <form id="formEditarCliente" method="POST" @submit="validarEditar" class="space-y-6">
-                    @csrf
-                    @method('PUT')
+      <div>
+        <label for="FechaRegistro" class="block text-gray-700 font-semibold mb-2">Fecha de Registro</label>
+        <input
+          type="date"
+          name="FechaRegistro"
+          id="FechaRegistro"
+          x-model="cliente.FechaRegistro"
+          required
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+        />
+        @error('FechaRegistro')
+          <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-                    <div>
-                        <label for="NombreCliente" class="block text-gray-700 font-semibold mb-2">Nombre Cliente</label>
-                        <input type="text" name="NombreCliente" id="NombreCliente" x-model="cliente.NombreCliente" required
-                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200" />
-                    </div>
+      <div>
+        <label for="Estado" class="block text-gray-700 font-semibold mb-2">Estado</label>
+        <select
+          name="Estado"
+          id="Estado"
+          x-model="cliente.Estado"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+        >
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+        @error('Estado')
+          <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-                    <div>
-                        <label for="PersonaID" class="block text-gray-700 font-semibold mb-2">Persona</label>
-                        <select name="PersonaID" id="PersonaID" x-model="cliente.PersonaID" required
-                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200">
-                            <option value="">Seleccione una persona</option>
-                            @foreach ($personas as $persona)
-                                <option value="{{ $persona->PersonaID }}">{{ $persona->NombreCompleto }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+      <div>
+        <label for="Notas" class="block text-gray-700 font-semibold mb-2">Notas</label>
+        <textarea
+          name="Notas"
+          id="Notas"
+          rows="3"
+          x-model="cliente.Notas"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+        ></textarea>
+        @error('Notas')
+          <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-                    <div>
-                        <label for="Categoria" class="block text-gray-700 font-semibold mb-2">Categoría</label>
-                        <select name="Categoria" id="Categoria" x-model="cliente.Categoria"
-                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200" required>
-                            <option value="" disabled>Selecciona una categoría</option>
-                            <option value="Regular">Regular</option>
-                            <option value="Premium">Premium</option>
-                            <option value="VIP">VIP</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="FechaRegistro" class="block text-gray-700 font-semibold mb-2">Fecha de Registro</label>
-                        <input type="date" name="FechaRegistro" id="FechaRegistro" x-model="cliente.FechaRegistro" required
-                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200" />
-                    </div>
-
-                    <div>
-                        <label for="Estado" class="block text-gray-700 font-semibold mb-2">Estado</label>
-                        <select name="Estado" id="Estado" x-model="cliente.Estado"
-                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200">
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="Notas" class="block text-gray-700 font-semibold mb-2">Notas</label>
-                        <textarea name="Notas" id="Notas" rows="3" x-model="cliente.Notas"
-                                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200"></textarea>
-                    </div>
-
-                    <div class="mt-6 text-end">
-                        <button type="button" @click="modalEditar = false"
-                                class="bg-red-600 text-white font-bold px-4 py-2 rounded mr-2">
-                            ❌ Cancelar
-                        </button>
-                        <button type="submit"
-                                class="bg-blue-600 text-white font-bold px-4 py-2 rounded">
-                            💾 Actualizar Cliente
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Script AlpineJS -->
-    <script>
-    function clienteModales() {
-        return {
-            modalCrear: false,
-            modalEditar: false,
-            cliente: {},
-
-            abrirCrear() {
-                this.cliente = {
-    NombreCliente: '',
-    PersonaID: '',
-    EmpleadoID: '{{ auth()->user()->empleado->EmpleadoID ?? '' }}',
-    Categoria: '',
-    FechaRegistro: '',
-    Estado: 'Activo',
-    Notas: ''
-};
-                this.modalCrear = true;
-            },
-
-            abrirEditar(clienteData) {
-    // Validación robusta de FechaRegistro
-    if (clienteData.FechaRegistro && typeof clienteData.FechaRegistro === 'string') {
-        if (clienteData.FechaRegistro.includes(' ')) {
-            clienteData.FechaRegistro = clienteData.FechaRegistro.split(' ')[0];
-        }
-    }
-
-    this.cliente = { ...clienteData };
-    this.modalEditar = true;
-
-    // Validación visual
-    console.log("Modal de edición abierto con:", this.cliente);
-},
+      <div class="mt-6 text-end">
+        <button
+          type="button"
+          @click="modalEditar = false"
+          class="bg-red-600 text-white font-bold px-4 py-2 rounded mr-2"
+        >
+          ❌ Cancelar
+        </button>
+        <button
+          type="submit"
+          class="bg-blue-600 text-white font-bold px-4 py-2 rounded"
+        >
+          💾 Actualizar Cliente
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
 
-            validarCrear(event) {
-                if (!this.cliente.NombreCliente || !this.cliente.Categoria || !this.cliente.FechaRegistro) {
-                    alert('Por favor completa todos los campos requeridos.');
-                    event.preventDefault();
-                }
-            },
 
-            validarEditar(event) {
-                if (!this.cliente.NombreCliente || !this.cliente.PersonaID || !this.cliente.Categoria || !this.cliente.FechaRegistro) {
-                    alert('Por favor completa todos los campos requeridos.');
-                    event.preventDefault();
-                    return;
-                }
+<script>
+function clienteModales() {
+  return {
+    modalCrear: false,
+    modalEditar: false,
+    cliente: {},
 
-                const form = document.getElementById('formEditarCliente');
-                form.action = `/clientes/${this.cliente.ClienteID}`;
-            },
-        }
-    }
+    abrirCrear() {
+      this.cliente = {
+        NombreCliente: '',
+        PersonaID: '',
+        EmpleadoID: '{{ auth()->user()->empleado->EmpleadoID ?? '' }}',
+        Categoria: '',
+        FechaRegistro: '',
+        Estado: 'Activo',
+        Notas: ''
+      };
+      this.modalCrear = true;
+    },
+
+    abrirEditar(data) {
+      // Normaliza fecha para <input type="date">
+      if (data.FechaRegistro && typeof data.FechaRegistro === 'string') {
+        data.FechaRegistro = data.FechaRegistro.split('T')[0].split(' ')[0];
+      }
+      // Asegura que el valor coincida con el value del <option> (string vs number)
+      if (data.PersonaID !== null && data.PersonaID !== undefined) {
+        data.PersonaID = String(data.PersonaID);
+      }
+
+      this.cliente = { ...data };
+      this.modalEditar = true;
+    },
+
+    validarCrear(e) {
+      if (!this.cliente.NombreCliente || !this.cliente.PersonaID || !this.cliente.Categoria || !this.cliente.FechaRegistro) {
+        e.preventDefault();
+        alert('Por favor completa todos los campos requeridos.');
+      }
+    },
+
+    validarEditar(e) {
+      // Solo prevenir si falta algo
+      if (!this.cliente.NombreCliente || !this.cliente.PersonaID || !this.cliente.Categoria || !this.cliente.FechaRegistro) {
+        e.preventDefault();
+        alert('Por favor completa todos los campos requeridos.');
+      }
+      // Si todo está, NO hacemos preventDefault: Laravel lo envía normal al PUT /clientes/{id}
+    },
+  }
+}
 </script>
+
 
     @php
     $toastType = session('error') ? 'error' : (session('success') ? 'success' : null);

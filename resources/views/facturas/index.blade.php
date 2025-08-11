@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="text-xl font-bold flex items-center gap-2">
-            <i class="fas fa-file-invoice"></i> Facturas
+            <i class="fas fa-file-invoice"></i> Ventas
         </h2>
     </x-slot>
 
@@ -42,8 +42,7 @@
                     @click="openModal = true"
                     class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow whitespace-nowrap"
                 >
-                    <i class="fas fa-plus"></i> Nueva factura
-                </button>
+                    <i class="fas fa-plus"></i> Nueva Venta
             @endif
         </div>
 
@@ -73,8 +72,18 @@
 
                 {{-- Título --}}
                 <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                    <i class="fas fa-file-invoice"></i> Nueva Factura
+                    <i class="fas fa-file-invoice"></i> Nueva Facturazzaadsfdsf
                 </h2>
+
+                @if($errors->any())
+            <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
+                <ul class="list-disc list-inside">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
                 {{-- Formulario --}}
                 <form action="{{ route('facturas.store') }}" method="POST" id="factura-form">
@@ -90,6 +99,23 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div class="mb-4">
+    <label for="RTN" class="block text-gray-700">RTN (opcional):</label>
+    <input type="text" name="RTN" id="RTN" 
+           class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300"
+           value="{{ old('RTN') }}">
+</div>
+
+                    {{-- Tipo de pago --}}
+<div class="mb-4">
+    <label class="block font-bold text-gray-700 mb-1">Tipo de Pago</label>
+    <select name="tipo_pago" class="w-full border rounded px-3 py-2" required>
+        <option value="">Seleccione una opción</option>
+        <option value="Contado">Contado</option>
+        <option value="Crédito">Crédito</option>
+    </select>
+</div>
 
                     {{-- Empleado (solo mostrar, no editar) --}}
 <div class="mb-4">
@@ -162,74 +188,88 @@
         </div>
     </div>
 
-    {{-- Tabla principal --}}
-    <div class="overflow-x-auto bg-white rounded-lg shadow mt-4">
-        <table class="min-w-full text-sm text-gray-800">
-            <thead class="bg-orange-500 text-white text-sm uppercase">
-                <tr>
-                    <th class="px-4 py-3 text-center">Factura ID</th>
-                    <th class="px-4 py-3 text-center">Cliente</th>
-                    <th class="px-4 py-3 text-center">Empleado</th>
-                    <th class="px-4 py-3 text-center">Fecha</th>
-                    <th class="px-4 py-3 text-center">Total</th>
-                    <th class="px-4 py-3 text-center">Producto</th>
-                    <th class="px-4 py-3 text-center">Cantidad</th>
-                    <th class="px-4 py-3 text-right">Precio Unitario</th>
-                    <th class="px-4 py-3 text-right">Subtotal</th>
-                    <th class="px-4 py-3 text-center">Acciones</th>
-                    <th class="px-4 py-3 text-center">Estado</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-                @foreach($facturas as $factura)
-                    @foreach($factura->detalles as $detalle)
-                        <tr class="transition {{ $factura->Estado === 'Cancelada' ? 'bg-red-100 text-red-700 font-semibold' : 'hover:bg-gray-50' }}">
-                            @if ($loop->first)
-                                <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->FacturaID }}</td>
-                                <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->cliente->NombreCliente ?? '—' }}</td>
-                                <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->empleado->persona->NombreCompleto ?? '—' }}</td>
-                                <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->Fecha }}</td>
-                                <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">L. {{ number_format($factura->Total, 2) }}</td>
-                            @endif
+{{-- Tabla principal --}}
+<div class="overflow-x-auto bg-white rounded-lg shadow mt-4">
+    <table class="min-w-full text-sm text-gray-800">
+        <thead class="bg-orange-500 text-white text-sm uppercase">
+            <tr>
+                <th class="px-4 py-3 text-center">Factura ID</th>
+                <th class="px-4 py-3 text-center">Cliente</th>
+                <th class="px-4 py-3 text-center">RTN</th>
+                <th class="px-4 py-3 text-center">Pago</th>
+                <th class="px-4 py-3 text-center">Empleado</th>
+                <th class="px-4 py-3 text-center">Fecha</th>
+                <th class="px-4 py-3 text-center">Producto</th>
+                <th class="px-4 py-3 text-center">Cantidad</th>
+                <th class="px-4 py-3 text-right">Precio Unitario</th>
+                <th class="px-4 py-3 text-right">Subtotal</th>
+                <th class="px-4 py-3 text-right">Total</th>
+                <th class="px-4 py-3 text-center">Acciones</th>
+                <th class="px-4 py-3 text-center">Estado</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+            @foreach($facturas as $factura)
+                @foreach($factura->detalles as $detalle)
+                    <tr class="transition {{ $factura->Estado === 'Cancelada' ? 'bg-red-100 text-red-700 font-semibold' : 'hover:bg-gray-50' }}">
+                        @if ($loop->first)
+                            <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->FacturaID }}</td>
+                            <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->cliente->NombreCliente ?? '—' }}</td>
+                            <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->RTN ?? 'N/A' }}</td>
+                            <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">
+                                <span class="px-2 py-1 rounded text-white text-xs font-bold 
+                                    {{ $factura->tipo_pago === 'Crédito' ? 'bg-yellow-500' : 'bg-green-600' }}">
+                                    {{ $factura->tipo_pago }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->empleado->persona->NombreCompleto ?? '—' }}</td>
+                            <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">{{ $factura->Fecha }}</td>
+                        @endif
 
-                            <td class="px-4 py-2 text-center">{{ $detalle->producto->NombreProducto ?? '—' }}</td>
-                            <td class="px-4 py-2 text-center">{{ $detalle->Cantidad }}</td>
-                            <td class="px-4 py-2 text-right">L. {{ number_format($detalle->PrecioUnitario, 2) }}</td>
-                            <td class="px-4 py-2 text-right">L. {{ number_format($detalle->Subtotal, 2) }}</td>
+                        <td class="px-4 py-2 text-center">{{ $detalle->producto->NombreProducto ?? '—' }}</td>
+                        <td class="px-4 py-2 text-center">{{ $detalle->Cantidad }}</td>
+                        <td class="px-4 py-2 text-right">L. {{ number_format($detalle->PrecioUnitario, 2) }}</td>
+                        <td class="px-4 py-2 text-right">L. {{ number_format($detalle->Subtotal, 2) }}</td>
 
-                            @if ($loop->first)
-                                <td class="text-center align-middle" rowspan="{{ $factura->detalles->count() }}">
-                                    <div class="flex justify-center items-center gap-2 h-full">
-                                        @if($permisos::tienePermiso('Factura', 'eliminar') && $factura->Estado === 'Activa')
-                                            <form action="{{ route('facturas.cancelar', $factura->FacturaID) }}" method="POST" onsubmit="return confirm('¿Cancelar esta factura?');">
-                                                @csrf
-                                                @method('PUT')
-                                                <button class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-circle" title="Cancelar">
-                                                    <i class="fas fa-ban"></i>
-                                                </button>
-                                            </form>
-                                        @endif
+                        @if ($loop->first)
+                            <td class="px-4 py-2 text-center" rowspan="{{ $factura->detalles->count() }}">
+                                L. {{ number_format($factura->Total, 2) }}
+                            </td>
 
-                                        @if($permisos::tienePermiso('Factura', 'exportar'))
-                                            <a href="{{ route('facturas.pdf', $factura->FacturaID) }}"
-                                               class="bg-blue-700 hover:bg-blue-900 text-white p-2 rounded-circle"
-                                               title="Generar PDF">
-                                                <i class="fas fa-file-invoice"></i>
-                                            </a>
-                                        @endif
-                                    </div>
-                                </td>
+                            <td class="text-center align-middle" rowspan="{{ $factura->detalles->count() }}">
+                                <div class="flex justify-center items-center gap-2 h-full">
+                                    @if($permisos::tienePermiso('Factura', 'eliminar') && $factura->Estado === 'Activa')
+                                        <form action="{{ route('facturas.cancelar', $factura->FacturaID) }}" method="POST" onsubmit="return confirm('¿Cancelar esta factura?');">
+                                            @csrf
+                                            @method('PUT')
+                                            <button class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-circle" title="Cancelar">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        </form>
+                                    @endif
 
-                                <td class="px-4 py-2 text-center align-middle" rowspan="{{ $factura->detalles->count() }}">
-                                    {{ $factura->Estado }}
-                                </td>
-                            @endif
-                        </tr>
-                    @endforeach
+                                    @if($permisos::tienePermiso('Factura', 'exportar'))
+                                        <a href="{{ route('facturas.pdf', $factura->FacturaID) }}"
+                                           class="bg-blue-700 hover:bg-blue-900 text-white p-2 rounded-circle"
+                                           title="Generar PDF">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                            </td>
+
+                            <td class="px-4 py-2 text-center align-middle" rowspan="{{ $factura->detalles->count() }}">
+                                {{ $factura->Estado }}
+                            </td>
+                        @endif
+                    </tr>
                 @endforeach
-            </tbody>
-        </table>
-    </div>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+
+
 
     <div class="mt-4">
         {{ $facturas->appends(['search' => request('search')])->links() }}

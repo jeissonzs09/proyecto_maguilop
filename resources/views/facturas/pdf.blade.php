@@ -27,7 +27,7 @@
                     <h2 style="color: #0066cc; margin: 0;">Maguilop - Servicios Técnicos</h2>
                     <p style="margin: 2px 0;">Propietario: <strong>Manuel de Jesús Aguirre López</strong></p>
                     <p style="margin: 2px 0;">R.T.N.: 08011953018083</p>
-                    <p style="margin: 2px 0;">CAI: <strong>1EBAC5-916145-BFBFE0-63BE03-09095C-97</strong></p>
+                    <p style="margin: 2px 0;">CAI: <strong>{{ $cai->codigo }}</strong></p>
                     <p style="margin: 2px 0;">Ave. República de Chile contiguo a la posta Policial La Guadalupe #223</p>
                     <p style="margin: 2px 0;">PBX: 2239-7292, 2235-6655 | Tigo: 2754-7638</p>
                     <p style="margin: 2px 0;">Email: maguilop239729@yahoo.com</p>
@@ -36,10 +36,13 @@
         </td>
         <td class="center" style="vertical-align: top;">
             <p class="bold">FACTURA No.</p>
-            <p style="font-size: 16px;">000-001-01-000{{ str_pad($factura->FacturaID, 5, '0', STR_PAD_LEFT) }}</p>
+            <p style="font-size: 16px;">{{ $factura->NumeroFactura }}</p>
             <p class="small">Fecha: {{ \Carbon\Carbon::parse($factura->Fecha)->format('d/m/Y') }}</p>
-            <p class="small">Fecha límite de emisión: {{ \Carbon\Carbon::parse($factura->Fecha)->addDays(7)->format('d/m/Y') }}</p>
-            <p><input type="checkbox"> CONTADO &nbsp;&nbsp; <input type="checkbox"> CRÉDITO</p>
+            <p class="small">Fecha límite de emisión: {{ \Carbon\Carbon::parse($cai->fecha_limite_emision)->format('d/m/Y') }}</p>
+            <p>
+                <input type="checkbox" {{ $factura->tipo_pago === 'Contado' ? 'checked' : '' }}> CONTADO &nbsp;&nbsp;
+                <input type="checkbox" {{ $factura->tipo_pago === 'Crédito' ? 'checked' : '' }}> CRÉDITO
+            </p>
         </td>
     </tr>
 </table>
@@ -48,7 +51,11 @@
 <table class="no-border" style="margin-top: 10px;">
     <tr>
         <td><strong>Cliente:</strong> {{ $factura->cliente->NombreCliente }}</td>
-        <td><strong>RTN:</strong> {{ $factura->cliente->RTN ?? '------' }}</td>
+        <td>
+            @if ($factura->RTN)
+                <strong>RTN:</strong> {{ $factura->RTN }}
+            @endif
+        </td>
     </tr>
     <tr>
         <td><strong>Dirección:</strong> {{ $factura->cliente->Direccion ?? '------' }}</td>
@@ -83,6 +90,12 @@
 </table>
 
 {{-- TOTALES --}}
+@php
+    $totalConImpuesto = $factura->Total;
+    $subtotal = $totalConImpuesto / 1.15;
+    $impuesto = $totalConImpuesto - $subtotal;
+@endphp
+
 <table class="no-border" style="margin-top: 20px;">
     <tr>
         <td style="width: 65%;"></td>
@@ -90,9 +103,9 @@
             <table>
                 <tr><td>Importe Exonerado</td><td class="right">L 0.00</td></tr>
                 <tr><td>Importe Exento</td><td class="right">L 0.00</td></tr>
-                <tr><td>Sub Total</td><td class="right">L {{ number_format($factura->Total, 2) }}</td></tr>
-                <tr><td>15% IMP. S/V</td><td class="right">L {{ number_format($factura->Total * 0.15, 2) }}</td></tr>
-                <tr><td class="bold">TOTAL A PAGAR</td><td class="right bold">L {{ number_format($factura->Total * 1.15, 2) }}</td></tr>
+                <tr><td>Sub Total</td><td class="right">L {{ number_format($subtotal, 2) }}</td></tr>
+                <tr><td>15% IMP. S/V</td><td class="right">L {{ number_format($impuesto, 2) }}</td></tr>
+                <tr><td class="bold">TOTAL A PAGAR</td><td class="right bold">L {{ number_format($totalConImpuesto, 2) }}</td></tr>
             </table>
         </td>
     </tr>
@@ -103,6 +116,3 @@
 
 </body>
 </html>
-
-
-

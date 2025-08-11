@@ -1,11 +1,28 @@
-<section>
+<section 
+    x-data="{
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        showCurrent: false,
+        showNew: false,
+        showConfirm: false,
+
+        isValidPassword() {
+            return /^(?=.*[A-Z])(?=.*\d).{8,}$/.test(this.newPassword);
+        },
+        passwordsMatch() {
+            return this.newPassword === this.confirmPassword;
+        }
+    }"
+>
+    <!-- Encabezado -->
     <header>
         <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Update Password') }}
+            {{ __('Actualizar contraseña') }}
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            {{ __('Ensure your account is using a long, random password to stay secure.') }}
+            {{ __('Asegúrate de que tu cuenta esté usando una contraseña larga y aleatoria para mantenerla segura.') }}
         </p>
     </header>
 
@@ -13,36 +30,79 @@
         @csrf
         @method('put')
 
+        <!-- Contraseña actual -->
         <div>
-            <x-input-label for="update_password_current_password" :value="__('Current Password')" />
-            <x-text-input id="update_password_current_password" name="current_password" type="password" class="mt-1 block w-full" autocomplete="current-password" />
-            <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
+            <x-input-label for="update_password_current_password" value="Contraseña actual" />
+            <div class="relative">
+                <input :type="showCurrent ? 'text' : 'password'" 
+                       x-model="currentPassword" 
+                       id="update_password_current_password" 
+                       name="current_password"
+                       class="mt-1 block w-full pr-10 border-gray-300 rounded-md shadow-sm" />
+                <button type="button" 
+                        @click="showCurrent = !showCurrent" 
+                        class="absolute inset-y-0 right-3 flex items-center text-gray-500">
+                    👁
+                </button>
+            </div>
         </div>
 
+        <!-- Nueva contraseña -->
         <div>
-            <x-input-label for="update_password_password" :value="__('New Password')" />
-            <x-text-input id="update_password_password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" />
-            <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
+            <x-input-label for="update_password_password" value="Nueva contraseña" />
+            <div class="relative">
+                <input :type="showNew ? 'text' : 'password'" 
+                       x-model="newPassword" 
+                       id="update_password_password" 
+                       name="password"
+                       class="mt-1 block w-full pr-10 border-gray-300 rounded-md shadow-sm" />
+                <button type="button" 
+                        @click="showNew = !showNew" 
+                        class="absolute inset-y-0 right-3 flex items-center text-gray-500">
+                    👁
+                </button>
+            </div>
+            <p class="text-sm mt-1" 
+               :class="isValidPassword() ? 'text-green-600' : 'text-red-600'">
+                Debe tener al menos 8 caracteres, 1 mayúscula y 1 número.
+            </p>
         </div>
 
+        <!-- Confirmar contraseña -->
         <div>
-            <x-input-label for="update_password_password_confirmation" :value="__('Confirm Password')" />
-            <x-text-input id="update_password_password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" autocomplete="new-password" />
-            <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2" />
+            <x-input-label for="update_password_password_confirmation" value="Confirmar contraseña" />
+            <div class="relative">
+                <input :type="showConfirm ? 'text' : 'password'" 
+                       x-model="confirmPassword" 
+                       id="update_password_password_confirmation" 
+                       name="password_confirmation"
+                       class="mt-1 block w-full pr-10 border-gray-300 rounded-md shadow-sm" />
+                <button type="button" 
+                        @click="showConfirm = !showConfirm" 
+                        class="absolute inset-y-0 right-3 flex items-center text-gray-500">
+                    👁
+                </button>
+            </div>
+            <p class="text-sm mt-1" 
+               :class="passwordsMatch() ? 'text-green-600' : 'text-red-600'">
+                Las contraseñas deben coincidir.
+            </p>
         </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+<!-- Botón y mensaje de éxito -->
+<div class="flex items-center gap-4">
+    <x-primary-button 
+        class="bg-orange-500 hover:bg-orange-600 focus:ring-orange-400 inline-flex w-auto"
+        x-bind:disabled="!isValidPassword() || !passwordsMatch() || !currentPassword"
+        x-bind:class="(!isValidPassword() || !passwordsMatch() || !currentPassword) ? 'opacity-50 cursor-not-allowed' : ''">
+        Guardar
+    </x-primary-button>
 
-            @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
-            @endif
-        </div>
+    @if (session('status') === 'password-updated')
+        <p class="text-sm text-green-600 font-semibold border border-green-400 bg-green-50 px-3 py-2 rounded-lg">
+            Contraseña actualizada correctamente.
+        </p>
+    @endif
+</div>
     </form>
 </section>

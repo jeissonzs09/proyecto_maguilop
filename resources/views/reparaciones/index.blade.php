@@ -241,7 +241,7 @@
                 >
                     <option value="Pendiente" {{ old('Estado') == 'Pendiente' ? 'selected' : '' }}>Pendiente</option>
                     <option value="En proceso" {{ old('Estado') == 'En proceso' ? 'selected' : '' }}>En proceso</option>
-                    <option value="Completado" {{ old('Estado') == 'Completado' ? 'selected' : '' }}>Completado</option>
+                    <option value="Finalizado" {{ old('Estado') == 'Finalizado' ? 'selected' : '' }}>Finalizado</option>
                 </select>
                 @error('Estado') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
@@ -347,7 +347,7 @@
                 <select name="Estado" class="w-full border rounded-md px-3 py-2">
                     <option value="Pendiente" :selected="reparacionEditar.Estado === 'Pendiente'">Pendiente</option>
                     <option value="En proceso" :selected="reparacionEditar.Estado === 'En proceso'">En proceso</option>
-                    <option value="Completado" :selected="reparacionEditar.Estado === 'Completado'">Completado</option>
+                    <option value="Finalizado" :selected="reparacionEditar.Estado === 'Finalizado'">Finalizado</option>
                 </select>
             </div>
 

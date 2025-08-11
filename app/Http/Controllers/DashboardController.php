@@ -10,6 +10,7 @@ use App\Models\Reparacion;
 use App\Models\Compra;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\Factura;
 
 class DashboardController extends Controller
 {
@@ -19,7 +20,9 @@ public function index()
     $totalClientes = Cliente::count();
     $totalEmpleados = Empleado::count();
     $totalPedidos = Pedido::count();
-    $totalVentas = Venta::sum('TotalVenta');
+
+    // ✅ Total ventas desde facturas activas
+    $totalVentas = Factura::where('Estado', 'Activa')->sum('Total');
 
     // Reparaciones por estado
     $reparacionesPorEstado = Reparacion::selectRaw('Estado, COUNT(*) as total')
@@ -27,14 +30,15 @@ public function index()
         ->pluck('total', 'Estado')
         ->toArray();
 
-    // Ventas por mes
-    $ventasPorMes = Venta::selectRaw("DATE_FORMAT(FechaVenta, '%b') as mes, SUM(TotalVenta) as total")
+    // ✅ Ventas por mes desde facturas activas
+    $ventasPorMes = Factura::where('Estado', 'Activa')
+        ->selectRaw("DATE_FORMAT(Fecha, '%b') as mes, SUM(Total) as total")
         ->groupBy('mes')
         ->orderByRaw("STR_TO_DATE(mes, '%b')")
         ->pluck('total', 'mes')
         ->toArray();
 
-    // Compras por mes (nuevo)
+    // Compras por mes (igual que antes)
     $comprasPorMes = Compra::selectRaw("MONTH(FechaCompra) as mes, SUM(TotalCompra) as total")
         ->where('FechaCompra', '>=', Carbon::now()->subMonths(6))
         ->groupBy(DB::raw("MONTH(FechaCompra)"))
@@ -55,7 +59,7 @@ public function index()
         'totalVentas',
         'reparacionesPorEstado',
         'ventasPorMes',
-        'comprasPorMesFormateado' // nuevo
+        'comprasPorMesFormateado'
     ));
 }
 }

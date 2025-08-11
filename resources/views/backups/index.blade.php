@@ -61,14 +61,12 @@
                             <td class="px-4 py-2 text-center">
                                 <div class="flex justify-center gap-2">
                                     {{-- Restaurar --}}
-                                    @if($permisos::tienePermiso('Backups', 'restaurar'))
                                         <form action="{{ route('backups.restore', $backup->BackupID) }}" method="POST" onsubmit="return confirm('¿Restaurar este backup?')">
                                             @csrf
                                             <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-full" title="Restaurar">
                                                 <i class="fas fa-sync-alt"></i>
                                             </button>
                                         </form>
-                                    @endif
 
                                     {{-- Descargar --}}
                                     <a href="{{ route('backups.download', $backup->NombreArchivo) }}"

@@ -26,7 +26,7 @@ class EmpresaController extends Controller
             });
         }
 
-        $empresas = $query->orderBy('EmpresaID', 'desc')->paginate(5);
+        $empresas = $query->orderBy('EmpresaID', 'desc')->paginate(10);
 
         return view('empresa.index', compact('empresas'));
     }
@@ -55,42 +55,36 @@ class EmpresaController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'NombreEmpresa' => 'required|string|max:255',
-            'Telefono'      => 'nullable|string|max:50',
-            'Website'       => 'nullable|string|max:255',
-            'Direccion'     => 'nullable|string|max:500',
-            'Descripcion'   => 'nullable|string',
-        ]);
+{
+    $data = $request->validate([
+        'NombreEmpresa' => 'required|string|max:255',
+        'Telefono'      => ['nullable', 'regex:/^[0-9]+$/'], // Solo números, cualquier longitud
+        'Website'       => 'nullable|string|max:255',
+        'Direccion'     => 'nullable|string|max:500',
+        'Descripcion'   => ['nullable', 'string', 'max:1000', 'regex:/^[A-Za-z0-9ÁÉÍÓÚÑáéíóúñ\s\.,\-]+$/u'],
+        // letras, números, acentos, espacios, puntos, comas y guiones
+    ], [
+        'Telefono.regex' => 'El teléfono solo debe contener números.',
+        'Descripcion.regex' => 'La descripción solo puede contener letras, números, espacios, puntos, comas y guiones.',
+    ]);
 
-        $empresa = Empresa::create($data);
+    $empresa = Empresa::create($data);
 
-        Bitacora::create([
-            'UsuarioID' => Auth::id(),
-            'Accion' => 'Crear',
-            'TablaAfectada' => 'empresa',
-            'FechaAccion' => now(),
-            'Descripcion' => 'Empresa creada: ID '.$empresa->EmpresaID.' - Nombre: '.$empresa->NombreEmpresa,
-            'DatosPrevios' => null,
-            'DatosNuevos' => json_encode($empresa->toArray()),
-            'Modulo' => 'Empresas',
-            'Resultado' => 'Exitoso',
-        ]);
+    Bitacora::create([
+        'UsuarioID' => Auth::id(),
+        'Accion' => 'Crear',
+        'TablaAfectada' => 'empresa',
+        'FechaAccion' => now(),
+        'Descripcion' => 'Empresa creada: ID '.$empresa->EmpresaID.' - Nombre: '.$empresa->NombreEmpresa,
+        'DatosPrevios' => null,
+        'DatosNuevos' => json_encode($empresa->toArray()),
+        'Modulo' => 'Empresas',
+        'Resultado' => 'Exitoso',
+    ]);
 
-        return redirect()->route('empresa.index')->with('success', 'Empresa registrada correctamente.');
-    }
+    return redirect()->route('empresa.index')->with('success', 'Empresa registrada correctamente.');
+}
 
-    public function edit($id)
-    {
-        if (!PermisosHelper::tienePermiso('Empresas', 'editar')) {
-            abort(403);
-        }
-
-        $empresa = Empresa::findOrFail($id);
-
-        return view('empresa.edit', compact('empresa'));
-    }
 
     public function update(Request $request, $id)
     {

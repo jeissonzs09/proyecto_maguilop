@@ -156,19 +156,17 @@
                 <form action="{{ route('proveedores.store') }}" method="POST" class="space-y-4">
                     @csrf
 
-                    {{-- Mostrar el nombre del usuario --}}
-@php
-    $usuario = auth()->user();
-    $nombre = $usuario->persona->NombreCompleto ?? $usuario->name ?? 'Usuario sin nombre';
-@endphp
-
 <div>
     <label class="block text-sm font-medium text-gray-700 mb-1">Persona</label>
-    <input type="text" value="{{ $nombre }}" disabled
-           class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 bg-gray-100 text-gray-700" />
-    <input type="hidden" name="PersonaID"
-           value="{{ $usuario->persona->PersonaID ?? '' }}">
+    <select name="PersonaID" required
+        class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring focus:ring-indigo-200">
+        <option value="">Seleccione una persona</option>
+        @foreach($personas as $persona)
+            <option value="{{ $persona->PersonaID }}">{{ $persona->NombreCompleto }}</option>
+        @endforeach
+    </select>
 </div>
+
 
 
 
@@ -412,4 +410,59 @@
             }
         }
     </script>
+
+        @php
+    $toastType = session('error') ? 'error' : (session('success') ? 'success' : null);
+    $toastMsg  = session('error') ?: session('success');
+@endphp
+
+@if($toastType)
+    <div
+        id="toast-persona"
+        role="status" aria-live="polite"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+               text-white px-10 py-6 rounded-full shadow-2xl flex items-center gap-5
+               z-50 animate-fadeIn text-xl font-semibold ring-1 ring-white/20
+               max-w-[90vw]"
+        style="min-width: 420px; background-color: {{ $toastType === 'error' ? '#dc2626' : '#16a34a' }};"
+        onclick="this.remove()"
+    >
+        @if($toastType === 'error')
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+        @else
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2l4-4" />
+            </svg>
+        @endif
+
+        <span class="leading-snug break-words">{{ $toastMsg }}</span>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            const toast = document.getElementById('toast-persona');
+            if (toast) {
+                toast.style.transition = 'opacity .5s ease, transform .5s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -50%) scale(.95)';
+                setTimeout(() => toast.remove(), 500);
+            }
+        }, 3200);
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -48%) scale(.97); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .animate-fadeIn { animation: fadeIn .28s ease forwards; }
+    </style>
+@endif
 </x-app-layout>

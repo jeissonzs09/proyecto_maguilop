@@ -16,7 +16,7 @@ class PersonaController extends Controller
 {
     public function index(Request $request)
     {
-        if (!PermisosHelper::tienePermiso('Personas', 'ver')) {
+        if (!PermisosHelper::tienePermiso('Persona', 'ver')) {
             abort(403, 'No tienes permiso para ver esta sección.');
         }
 

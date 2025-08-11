@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\{
     Auth\AuthenticatedSessionController,
     Auth\NewPasswordController,
-    Auth\PasswordResetController,
+    // Auth\PasswordResetController,
     BackupController,
     BitacoraController,
     ClienteController,
@@ -29,7 +29,10 @@ use App\Http\Controllers\{
     TwoFactorController,
     UsuarioController,
     VentaController,
-    ProveedorController
+    ProveedorController,
+    CaiController,
+    CuentaPorCobrarController,
+    PagoController,
 };
 
 // Ruta de prueba de correo
@@ -45,8 +48,8 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-    Route::get('/forgot-password', [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
-    Route::post('/password/email', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
+   // Route::get('/forgot-password', [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
+    //Route::post('/password/email', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
     Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.update');
 });
@@ -132,6 +135,22 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/persona/{id}', [PersonaController::class, 'update'])->name('persona.update');
     Route::delete('/persona/{id}', [PersonaController::class, 'destroy'])->name('persona.destroy');
     Route::get('/persona/exportar-pdf', [PersonaController::class, 'exportarPDF'])->name('persona.exportarPDF');
+
+    //CAI
+    Route::get('/cai', [CaiController::class, 'index'])->name('cai.index');
+    Route::post('/cai', [CaiController::class, 'store'])->name('cai.store');
+
+    //Pagos
+    Route::post('/pagos', [PagoController::class, 'store'])->name('pagos.store');
+
+    //registro de pagos
+    Route::get('/cuentas-por-cobrar/{id}/pagos', [App\Http\Controllers\PagoController::class, 'historial'])->name('pagos.historial');
+    Route::get('/cuentas-por-cobrar', [CuentaPorCobrarController::class, 'index'])->name('cuentas-por-cobrar.index');
+
+    //Foto Perfil
+    Route::post('/perfil/foto', [ProfileController::class, 'updateAvatar'])
+    ->middleware('auth')
+    ->name('perfil.foto');
 
     // Exportar PDF
     Route::get('/reparaciones/exportar-pdf', [ReparacionController::class, 'exportarPDF'])->name('reparaciones.exportarPDF');

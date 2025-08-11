@@ -129,17 +129,6 @@
        class="w-full border rounded px-3 py-2 shadow-sm focus:ring focus:ring-blue-200" />
 
                     </div>
-
-                    {{-- Contraseña --}}
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700">Contraseña</label>
-                        <input type="password" name="password" required
-       minlength="8"
-       pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$"
-       title="Debe contener al menos 8 caracteres, una mayúscula y un símbolo especial"
-       class="w-full border rounded px-3 py-2 shadow-sm focus:ring focus:ring-blue-200" />
-                    </div>
-
                     {{-- Empleado --}}
                     <div class="mb-4">
                         <label for="EmpleadoID" class="block text-sm font-medium text-gray-700">Empleado</label>

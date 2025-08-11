@@ -9,15 +9,17 @@ use App\Helpers\PermisosHelper;
 class BitacoraController extends Controller
 {
     public function index()
-    {
-        if (!PermisosHelper::tienePermiso('Bitacora', 'ver')) {
-            abort(403, 'No tienes permiso para ver esta sección.');
-        }
-
-        $bitacoras = Bitacora::paginate(20); // o el número que desees por página
-
-        return view('bitacoras.index', compact('bitacoras'));
+{
+    if (!PermisosHelper::tienePermiso('Bitacora', 'ver')) {
+        abort(403, 'No tienes permiso para ver esta sección.');
     }
+
+    // Ordenar por ID descendente (más nuevos primero)
+    $bitacoras = Bitacora::orderBy('BitacoraID', 'desc')->paginate(20);
+
+    return view('bitacoras.index', compact('bitacoras'));
+}
+
 
     public function create()
     {

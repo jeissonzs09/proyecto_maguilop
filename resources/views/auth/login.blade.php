@@ -97,7 +97,3 @@
         }
     </script>
 </x-guest-layout>
-
-
-
-

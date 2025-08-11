@@ -13,6 +13,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\BitacoraHelper;
+use App\Models\Cai;
 
 class FacturaController extends Controller
 {
@@ -68,13 +69,14 @@ class FacturaController extends Controller
  public function store(Request $request)
 {
     $request->validate([
-        'ClienteID' => 'required|integer|exists:cliente,ClienteID',
-        'detalles' => 'required|array|min:1',
-        'detalles.*.ProductoID' => 'required|integer|exists:producto,ProductoID',
-        'detalles.*.Cantidad' => 'required|integer|min:1',
-        'detalles.*.PrecioUnitario' => 'required|numeric|min:0',
-    ]);
-
+    'ClienteID' => 'required|integer|exists:cliente,ClienteID',
+    'RTN' => 'nullable|string|max:14',
+    'tipo_pago' => 'required|in:Contado,Crédito',
+    'detalles' => 'required|array|min:1',
+    'detalles.*.ProductoID' => 'required|integer|exists:producto,ProductoID',
+    'detalles.*.Cantidad' => 'required|integer|min:1',
+    'detalles.*.PrecioUnitario' => 'required|numeric|min:0',
+]);
     $empleadoID = Auth::user()->EmpleadoID;
 
     if (!$empleadoID) {
@@ -95,17 +97,65 @@ class FacturaController extends Controller
     DB::beginTransaction();
 
     try {
-        $total = collect($request->detalles)->sum(function ($detalle) {
-            return $detalle['Cantidad'] * $detalle['PrecioUnitario'];
-        });
+        $subtotal = collect($request->detalles)->sum(function ($detalle) {
+    return $detalle['Cantidad'] * $detalle['PrecioUnitario'];
+});
 
-        $factura = Factura::create([
-            'ClienteID' => $request->ClienteID,
-            'EmpleadoID' => $empleadoID,
-            'Fecha' => now(),
-            'Total' => $total,
-            'Estado' => 'Activa',
-        ]);
+$impuesto = $subtotal * 0.15;
+$total = $subtotal + $impuesto;
+
+        $cai = Cai::first(); // O puedes aplicar un where si luego tienes múltiples CAI activos
+
+if (!$cai) {
+    return back()->withErrors(['error' => 'No hay CAI configurado.']);
+}
+
+if (now()->toDateString() > $cai->fecha_limite_emision) {
+    return back()->withErrors(['error' => 'El CAI ha vencido.']);
+}
+
+// Obtener número siguiente
+$numeroSiguiente = $cai->facturas_emitidas + 1;
+$inicio = (int) substr($cai->rango_inicial, -8);
+$fin = (int) substr($cai->rango_final, -8);
+
+if ($numeroSiguiente > $fin) {
+    return back()->withErrors(['error' => 'Se ha alcanzado el límite de facturación permitido por el CAI.']);
+}
+
+// Generar NumeroFactura (con formato 000-001-01-00000001)
+$prefijo = substr($cai->rango_inicial, 0, 10);
+$numeroFactura = $prefijo . '-' . str_pad($numeroSiguiente, 8, '0', STR_PAD_LEFT);
+
+
+    $factura = Factura::create([
+    'NumeroFactura' => $numeroFactura,
+    'ClienteID' => $request->ClienteID,
+    'RTN' => $request->RTN,
+    'EmpleadoID' => $empleadoID,
+    'Fecha' => now(),
+    'Total' => $total, // ✅ incluye el impuesto ahora
+    'Estado' => 'Activa',
+    'tipo_pago' => $request->tipo_pago,
+    'CAI' => $cai->codigo,
+]);
+
+
+// Si es al crédito, registrar en cuentas por cobrar
+if ($request->tipo_pago === 'Crédito') {
+    \App\Models\CuentaPorCobrar::create([
+    'FacturaID' => $factura->FacturaID,
+    'fecha_vencimiento' => now()->addDays(30),
+    'monto_total' => $total, // ✅ incluye impuesto
+    'monto_pagado' => 0,
+    'estado' => 'Pendiente',
+]);
+}
+
+// Incrementar facturas emitidas en el CAI
+$cai->facturas_emitidas = $numeroSiguiente;
+$cai->save();
+
 
         foreach ($request->detalles as $detalle) {
             DetalleFactura::create([
@@ -213,19 +263,21 @@ class FacturaController extends Controller
     }
 
     public function generarFacturaPDF($id)
-    {
-        $factura = Factura::with(['cliente', 'empleado.persona', 'detalles.producto'])->findOrFail($id);
+{
+    $factura = Factura::with(['cliente', 'empleado.persona', 'detalles.producto'])->findOrFail($id);
 
-        $logoPath = public_path('images/logo-maguilop.png');
-        $logoBase64 = base64_encode(file_get_contents($logoPath));
-        $logoMime = mime_content_type($logoPath);
-        $logoSrc = "data:$logoMime;base64,$logoBase64";
+    $logoPath = public_path('images/logo-maguilop.png');
+    $logoBase64 = base64_encode(file_get_contents($logoPath));
+    $logoMime = mime_content_type($logoPath);
+    $logoSrc = "data:$logoMime;base64,$logoBase64";
 
-        $pdf = Pdf::loadView('facturas.pdf', compact('factura', 'logoSrc'))
-            ->setPaper('letter', 'portrait');
+    $cai = \App\Models\Cai::first(); // 👈 Aquí está la clave
 
-        return $pdf->download('factura_' . $factura->FacturaID . '.pdf');
-    }
+    return Pdf::loadView('facturas.pdf', compact('factura', 'logoSrc', 'cai'))
+        ->setPaper('letter', 'portrait')
+        ->download('factura_' . $factura->NumeroFactura . '.pdf');
+}
+
 
     public function cancelar($id)
     {

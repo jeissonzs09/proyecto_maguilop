@@ -34,7 +34,7 @@ class ClienteController extends Controller
         });
     }
 
-$clientes = $query->orderBy('ClienteID', 'desc')->paginate(5);
+$clientes = $query->orderBy('ClienteID', 'desc')->paginate(10);
     $personas = Persona::all();
 
     // Obtener el nombre del empleado del usuario logueado

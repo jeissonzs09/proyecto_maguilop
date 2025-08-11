@@ -13,26 +13,28 @@ use App\Helpers\BitacoraHelper;
 class ProveedorController extends Controller
 {
     public function index(Request $request)
-    {
-        $search = $request->input('search');
+{
+    $search = $request->input('search');
 
-        $query = Proveedor::with(['persona', 'empresa'])
-            ->where(function ($query) use ($search) {
-                $query->whereHas('persona', function ($q) use ($search) {
-                    $q->whereRaw("CONCAT(Nombre, ' ', Apellido) LIKE ?", ["%{$search}%"]);
-                })
-                ->orWhere('RTN', 'like', "%{$search}%")
-                ->orWhere('Descripcion', 'like', "%{$search}%");
-            });
+    $query = Proveedor::with(['persona', 'empresa'])
+        ->where(function ($query) use ($search) {
+            $query->whereHas('persona', function ($q) use ($search) {
+                $q->whereRaw("CONCAT(Nombre, ' ', Apellido) LIKE ?", ["%{$search}%"]);
+            })
+            ->orWhere('RTN', 'like', "%{$search}%")
+            ->orWhere('Descripcion', 'like', "%{$search}%");
+        })
+        ->orderByDesc('ProveedorID'); // 👈 orden descendente por ID
 
-        $proveedores = $query->paginate(5);
+    $proveedores = $query->paginate(5);
 
-        // Necesitamos estas variables para los selects en los modales
-        $personas = Persona::orderBy('Nombre')->get();
-        $empresas = Empresa::orderBy('NombreEmpresa')->get();
+    // Necesitamos estas variables para los selects en los modales
+    $personas = Persona::orderBy('Nombre')->get();
+    $empresas = Empresa::orderBy('NombreEmpresa')->get();
 
-        return view('proveedores.index', compact('proveedores', 'personas', 'empresas'));
-    }
+    return view('proveedores.index', compact('proveedores', 'personas', 'empresas'));
+}
+
 
     public function store(Request $request)
     {
