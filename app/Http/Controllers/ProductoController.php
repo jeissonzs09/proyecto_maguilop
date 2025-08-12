@@ -8,34 +8,36 @@ use App\Helpers\PermisosHelper;
 use App\Models\Proveedor;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Helpers\BitacoraHelper;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ProductoController extends Controller
 {
     public function index(Request $request)
-{
-    if (!PermisosHelper::tienePermiso('Productos', 'ver')) {
-        abort(403, 'No tienes permiso para ver esta sección.');
+    {
+        if (!PermisosHelper::tienePermiso('Productos', 'ver')) {
+            abort(403, 'No tienes permiso para ver esta sección.');
+        }
+
+        $query = Producto::with('proveedor')->orderBy('ProductoID', 'desc');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('NombreProducto', 'LIKE', "%{$search}%")
+                  ->orWhere('Descripcion', 'LIKE', "%{$search}%")
+                  ->orWhere('Codigo', 'LIKE', "%{$search}%")
+                  ->orWhere('Area', 'LIKE', "%{$search}%")
+                  ->orWhere('PrecioCompra', 'LIKE', "%{$search}%")
+                  ->orWhere('PrecioVenta', 'LIKE', "%{$search}%")
+                  ->orWhere('Stock', 'LIKE', "%{$search}%")
+                  ->orWhereHas('proveedor', fn($q) => $q->where('Descripcion', 'LIKE', "%{$search}%"));
+        }
+
+        $productos = $query->paginate(10);
+        $proveedores = Proveedor::all();
+
+        return view('producto.index', compact('productos', 'proveedores'));
     }
-
-    $query = Producto::with('proveedor')->orderBy('ProductoID', 'desc');
-
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where('NombreProducto', 'LIKE', "%{$search}%")
-              ->orWhere('Descripcion', 'LIKE', "%{$search}%")
-              ->orWhere('PrecioCompra', 'LIKE', "%{$search}%")
-              ->orWhere('PrecioVenta', 'LIKE', "%{$search}%")
-              ->orWhere('Stock', 'LIKE', "%{$search}%")
-              ->orWhereHas('proveedor', fn($q) => $q->where('Descripcion', 'LIKE', "%{$search}%"));
-    }
-
-    $productos = $query->paginate(10);
-    $proveedores = Proveedor::all();
-
-    return view('producto.index', compact('productos', 'proveedores'));
-}
-
 
     public function create()
     {
@@ -45,68 +47,55 @@ class ProductoController extends Controller
 
     public function store(Request $request)
     {
-        // Limpieza previa
         $clean = function ($v) {
             if ($v === null) return $v;
             $v = trim($v);
             return preg_replace('/\s+/', ' ', $v);
         };
+
         $request->merge([
             'NombreProducto' => $clean($request->input('NombreProducto')),
             'Descripcion'    => $clean($request->input('Descripcion')),
         ]);
 
-        // Detectar nombres reales de tablas desde los modelos
         $productoTable  = (new Producto)->getTable();
         $proveedorTable = (new Proveedor)->getTable();
 
         $validated = $request->validate(
             [
+                'Codigo'         => ['nullable', 'string', 'max:30', "unique:{$productoTable},Codigo"],
                 'NombreProducto' => [
-                    'required',
-                    'string',
-                    'min:3',
-                    'max:60',
+                    'required', 'string', 'min:3', 'max:60',
                     'regex:/^[A-Za-z ]+$/',
                     Rule::unique($productoTable, 'NombreProducto'),
                 ],
-                'Descripcion' => [
-                    'required',
-                    'string',
-                    'min:10',
-                    'max:200',
-                    'regex:/^[A-Za-z0-9 ]+$/',
-                ],
-                'PrecioCompra' => ['required', 'numeric', 'min:0'],
-                'PrecioVenta'  => ['required', 'numeric', 'gte:PrecioCompra'],
-                'Stock'        => ['required', 'integer', 'min:0'],
-                'ProveedorID'  => ['required', 'integer', "exists:{$proveedorTable},ProveedorID"],
+                'Descripcion'    => ['required', 'string', 'min:3', 'max:200', 'regex:/^[A-Za-z0-9 ]+$/'],
+                'Area'           => ['required', 'in:Electronica,Refrigeracion'],
+                'PrecioCompra'   => ['required', 'numeric', 'min:0'],
+                'PrecioVenta'    => ['required', 'numeric', 'gte:PrecioCompra'],
+                'Stock'          => ['required', 'integer', 'min:0'],
+                'ProveedorID'    => ['required', 'integer', "exists:{$proveedorTable},ProveedorID"],
+                'Foto'           => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             ],
             [
-                'NombreProducto.required' => 'El nombre es obligatorio.',
-                'NombreProducto.min'      => 'El nombre debe tener al menos 3 caracteres.',
-                'NombreProducto.max'      => 'El nombre no debe exceder 60 caracteres.',
-                'NombreProducto.regex'    => 'El nombre solo puede contener letras A-Z y espacios.',
-                'NombreProducto.unique'   => 'Ya existe un producto con ese nombre.',
-
-                'Descripcion.required' => 'La descripcion es obligatoria.',
-                'Descripcion.min'      => 'La descripcion debe tener al menos 10 caracteres.',
-                'Descripcion.max'      => 'La descripcion no debe exceder 200 caracteres.',
-                'Descripcion.regex'    => 'La descripcion solo puede contener letras, numeros y espacios.',
-
-                'PrecioVenta.gte'      => 'El precio de venta no puede ser menor que el de compra.',
-                'ProveedorID.exists'   => 'El proveedor seleccionado no existe.',
+                'Area.required' => 'El área es obligatoria.',
+                'Area.in'       => 'El área debe ser Electronica o Refrigeracion.',
+                'Foto.image'    => 'El archivo debe ser una imagen.',
+                'Foto.mimes'    => 'Formato no permitido. Usa JPG, PNG o WEBP.',
+                'Foto.max'      => 'La imagen no debe superar 2MB.',
             ]
         );
 
-        $producto = Producto::create([
-            'NombreProducto' => $validated['NombreProducto'],
-            'Descripcion'    => $validated['Descripcion'],
-            'PrecioCompra'   => $validated['PrecioCompra'],
-            'PrecioVenta'    => $validated['PrecioVenta'],
-            'Stock'          => $validated['Stock'],
-            'ProveedorID'    => $validated['ProveedorID'],
-        ]);
+        // Generar código si no vino
+        if (empty($validated['Codigo'])) {
+            $validated['Codigo'] = 'PRD-' . now()->format('ymd') . '-' . str_pad(random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+        }
+
+        if ($request->hasFile('Foto')) {
+            $validated['Foto'] = $request->file('Foto')->store('productos', 'public');
+        }
+
+        $producto = Producto::create($validated);
 
         BitacoraHelper::registrar(
             'CREAR',
@@ -124,13 +113,13 @@ class ProductoController extends Controller
     {
         $producto = Producto::findOrFail($id);
         $proveedores = Proveedor::all();
-
         return view('producto.edit', compact('producto', 'proveedores'));
     }
 
     public function update(Request $request, $id)
     {
-        // Limpieza previa
+        $producto = Producto::findOrFail($id);
+
         $clean = function ($v) {
             if ($v === null) return $v;
             $v = trim($v);
@@ -146,54 +135,31 @@ class ProductoController extends Controller
 
         $validated = $request->validate(
             [
+                'Codigo'         => ['required', 'string', 'max:30', "unique:{$productoTable},Codigo,{$producto->ProductoID},ProductoID"],
                 'NombreProducto' => [
-                    'required',
-                    'string',
-                    'min:3',
-                    'max:60',
+                    'required', 'string', 'min:3', 'max:60',
                     'regex:/^[A-Za-z ]+$/',
                     Rule::unique($productoTable, 'NombreProducto')->ignore($id, 'ProductoID'),
                 ],
-                'Descripcion' => [
-                    'required',
-                    'string',
-                    'min:10',
-                    'max:200',
-                    'regex:/^[A-Za-z0-9 ]+$/',
-                ],
-                'PrecioCompra' => ['required', 'numeric', 'min:0'],
-                'PrecioVenta'  => ['required', 'numeric', 'gte:PrecioCompra'],
-                'Stock'        => ['required', 'integer', 'min:0'],
-                'ProveedorID'  => ['required', 'integer', "exists:{$proveedorTable},ProveedorID"],
-            ],
-            [
-                'NombreProducto.required' => 'El nombre es obligatorio.',
-                'NombreProducto.min'      => 'El nombre debe tener al menos 3 caracteres.',
-                'NombreProducto.max'      => 'El nombre no debe exceder 60 caracteres.',
-                'NombreProducto.regex'    => 'El nombre solo puede contener letras A-Z y espacios.',
-                'NombreProducto.unique'   => 'Ya existe un producto con ese nombre.',
-
-                'Descripcion.required' => 'La descripcion es obligatoria.',
-                'Descripcion.min'      => 'La descripcion debe tener al menos 10 caracteres.',
-                'Descripcion.max'      => 'La descripcion no debe exceder 200 caracteres.',
-                'Descripcion.regex'    => 'La descripcion solo puede contener letras, numeros y espacios.',
-
-                'PrecioVenta.gte'      => 'El precio de venta no puede ser menor que el de compra.',
-                'ProveedorID.exists'   => 'El proveedor seleccionado no existe.',
+                'Descripcion'    => ['required', 'string', 'min:3', 'max:200', 'regex:/^[A-Za-z0-9 ]+$/'],
+                'Area'           => ['required', 'in:Electronica,Refrigeracion'],
+                'PrecioCompra'   => ['required', 'numeric', 'min:0'],
+                'PrecioVenta'    => ['required', 'numeric', 'gte:PrecioCompra'],
+                'Stock'          => ['required', 'integer', 'min:0'],
+                'ProveedorID'    => ['required', 'integer', "exists:{$proveedorTable},ProveedorID"],
+                'Foto'           => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             ]
         );
 
-        $producto = Producto::findOrFail($id);
-        $anterior = $producto->toArray();
+        if ($request->hasFile('Foto')) {
+            if ($producto->Foto && Storage::disk('public')->exists($producto->Foto)) {
+                Storage::disk('public')->delete($producto->Foto);
+            }
+            $validated['Foto'] = $request->file('Foto')->store('productos', 'public');
+        }
 
-        $producto->update([
-            'NombreProducto' => $validated['NombreProducto'],
-            'Descripcion'    => $validated['Descripcion'],
-            'PrecioCompra'   => $validated['PrecioCompra'],
-            'PrecioVenta'    => $validated['PrecioVenta'],
-            'Stock'          => $validated['Stock'],
-            'ProveedorID'    => $validated['ProveedorID'],
-        ]);
+        $anterior = $producto->toArray();
+        $producto->update($validated);
 
         BitacoraHelper::registrar(
             'ACTUALIZAR',
@@ -208,30 +174,31 @@ class ProductoController extends Controller
     }
 
     public function destroy($id)
-{
-    $producto = Producto::findOrFail($id);
+    {
+        $producto = Producto::findOrFail($id);
 
-    // Validar si el producto está asociado a algún detalle_pedido
-    if ($producto->detallePedidos()->exists()) {
-        return redirect()->route('producto.index')->with('error', 'No se puede eliminar este producto porque está asociado a un pedido.');
+        if ($producto->detallePedidos()->exists()) {
+            return redirect()->route('producto.index')->with('error', 'No se puede eliminar este producto porque está asociado a un pedido.');
+        }
+
+        if ($producto->Foto && Storage::disk('public')->exists($producto->Foto)) {
+            Storage::disk('public')->delete($producto->Foto);
+        }
+
+        $registroEliminado = $producto->toArray();
+        $producto->delete();
+
+        BitacoraHelper::registrar(
+            'ELIMINAR',
+            'producto',
+            'Se eliminó el producto ID: ' . $id,
+            $registroEliminado,
+            null,
+            'Módulo de Productos'
+        );
+
+        return redirect()->route('producto.index')->with('success', 'Producto eliminado correctamente.');
     }
-
-    $registroEliminado = $producto->toArray();
-
-    $producto->delete();
-
-    BitacoraHelper::registrar(
-        'ELIMINAR',
-        'producto',
-        'Se eliminó el producto ID: ' . $id,
-        $registroEliminado,
-        null,
-        'Módulo de Productos'
-    );
-
-    return redirect()->route('producto.index')->with('success', 'Producto eliminado correctamente.');
-}
-
 
     public function exportarPDF(Request $request)
     {
@@ -243,6 +210,8 @@ class ProductoController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('NombreProducto', 'LIKE', "%{$search}%")
                   ->orWhere('Descripcion', 'LIKE', "%{$search}%")
+                  ->orWhere('Codigo', 'LIKE', "%{$search}%")
+                  ->orWhere('Area', 'LIKE', "%{$search}%")
                   ->orWhere('PrecioCompra', 'LIKE', "%{$search}%")
                   ->orWhere('PrecioVenta', 'LIKE', "%{$search}%")
                   ->orWhere('Stock', 'LIKE', "%{$search}%")

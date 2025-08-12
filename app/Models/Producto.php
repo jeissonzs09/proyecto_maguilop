@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-
 use Illuminate\Database\Eloquent\Model;
 use App\Models\DetallePedido;
 
@@ -15,6 +14,7 @@ class Producto extends Model
     public $timestamps = false; // asumo que no tienes campos created_at, updated_at
 
     protected $fillable = [
+        'Codigo',         // 🆕 Campo nuevo
         'NombreProducto',
         'Descripcion',
         'TipoProductoID',
@@ -26,23 +26,23 @@ class Producto extends Model
         'Stock',
         'ProveedorID',
         'AlmacenID',
-        'EmbalajeID'
+        'EmbalajeID',
+        'Area',           // 🆕 Campo nuevo
+        'Foto',           // 🆕 Campo nuevo
     ];
 
     public function proveedor()
-{
-    return $this->belongsTo(Proveedor::class, 'ProveedorID', 'ProveedorID');
-}
+    {
+        return $this->belongsTo(Proveedor::class, 'ProveedorID', 'ProveedorID');
+    }
 
-public function categoria()
-{
-    return $this->belongsTo(Categoria::class, 'CategoriaID');
-}
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class, 'CategoriaID');
+    }
 
-public function detallePedidos()
-{
-    return $this->hasMany(\App\Models\DetallePedido::class, 'ProductoID', 'ProductoID');
-}
-
-
+    public function detallePedidos()
+    {
+        return $this->hasMany(DetallePedido::class, 'ProductoID', 'ProductoID');
+    }
 }

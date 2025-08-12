@@ -33,6 +33,7 @@ use App\Http\Controllers\{
     CaiController,
     CuentaPorCobrarController,
     PagoController,
+    HelpController,
 };
 
 // Ruta de prueba de correo
@@ -151,6 +152,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/perfil/foto', [ProfileController::class, 'updateAvatar'])
     ->middleware('auth')
     ->name('perfil.foto');
+
+    //Help
+    Route::get('/help', [HelpController::class, 'index'])->name('help.index');
 
     // Exportar PDF
     Route::get('/reparaciones/exportar-pdf', [ReparacionController::class, 'exportarPDF'])->name('reparaciones.exportarPDF');

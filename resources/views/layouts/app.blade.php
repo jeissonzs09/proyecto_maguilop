@@ -329,6 +329,9 @@
           <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-blue-600 hover:bg-blue-100">
               Editar perfil
           </a>
+          <a href="{{ route('help.index') }}" class="block px-4 py-2 text-blue-600 hover:bg-blue-100">
+              Ayuda
+          </a>
           <form method="POST" action="{{ route('logout') }}">
               @csrf
               <button type="submit"
@@ -339,8 +342,6 @@
       </div>
   </div>
 </header>
-
-
 
         {{-- CONTENIDO (con scroll) --}}
         <main class="p-4 md:p-6 flex-1 overflow-y-auto">
