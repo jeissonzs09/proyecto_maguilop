@@ -77,7 +77,7 @@
                 <button @click="open = !open" class="flex items-center justify-between w-full px-3 py-2 rounded hover:bg-orange-600/70 transition">
                     <span class="flex items-center space-x-2">
                         <i class="fas fa-folder-open w-4 h-4"></i>
-                        <span>Gestión Persona</span>
+                        <span>Gestión Personas</span>
                     </span>
                     <i class="fas fa-chevron-down text-xs" :class="{'rotate-180': open}" style="transition: transform .2s;"></i>
                 </button>
@@ -125,21 +125,21 @@
             @if(PermisosHelper::tienePermiso('Reparaciones', 'ver'))
                 <a href="{{ route('reparaciones.index') }}" class="flex items-center space-x-2 px-3 py-2 rounded hover:bg-orange-600/70 transition">
                     <i class="fas fa-tools w-4 h-4"></i>
-                    <span>Reparaciones</span>
+                    <span>Gestion Reparaciones</span>
                 </a>
             @endif
 
             @if(PermisosHelper::tienePermiso('Productos', 'ver'))
                 <a href="{{ route('producto.index') }}" class="flex items-center space-x-2 px-3 py-2 rounded hover:bg-orange-600/70 transition">
                     <i class="fas fa-box-open w-4 h-4"></i>
-                    <span>Productos</span>
+                    <span>Gestion Productos</span>
                 </a>
             @endif
 
             @if(PermisosHelper::tienePermiso('Pedidos', 'ver'))
                 <a href="{{ route('pedidos.index') }}" class="flex items-center space-x-2 px-3 py-2 rounded hover:bg-orange-600/70 transition">
                     <i class="fas fa-clipboard-list w-4 h-4"></i>
-                    <span>Pedidos</span>
+                    <span>Gestion Pedidos</span>
                 </a>
             @endif
 
@@ -148,7 +148,7 @@
                 <button @click="open = !open" class="flex items-center justify-between w-full px-3 py-2 rounded hover:bg-orange-600/70 transition">
                     <span class="flex items-center space-x-2">
                         <i class="fas fa-shopping-cart w-4 h-4"></i>
-                        <span>Compra</span>
+                        <span>Gestion Compra</span>
                     </span>
                     <i class="fas fa-chevron-down text-xs" :class="{'rotate-180': open}" style="transition: transform .2s;"></i>
                 </button>
