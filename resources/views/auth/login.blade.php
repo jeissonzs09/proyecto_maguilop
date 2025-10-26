@@ -1,13 +1,13 @@
 <x-guest-layout> 
     <style>
         body {
-            background: url('{{ asset('images/maguilop-fondo.jpg') }}') no-repeat center center fixed;
+            background: url('{{ asset('images/fondo-1.jpg') }}') no-repeat center center fixed;
             background-size: cover;
         }
 
         /* Mensajes de error/advertencia */
         .error-message {
-            color: #ffffffff; /* Blanco */
+            color: #ff0000; /* rojo */
             font-size: 0.9rem;
             margin-top: 5px;
             font-weight: 600;
@@ -15,14 +15,19 @@
 
         /* Mensajes del backend */
         .server-error {
-            color: #ffffffff; /* Blanco */
+            color: #ff0000; /* rojo */
             font-size: 0.9rem;
             text-align: center;
+        }
+
+        input::placeholder {
+            color: #4b5563; /* gris oscuro */
+            opacity: 1;
         }
     </style>
 
     <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="backdrop-blur-lg bg-white/10 border border-white/30 shadow-2xl rounded-2xl p-8 w-full max-w-md text-white">
+        <div class="backdrop-blur-lg bg-white/10 border border-gray-300 shadow-2xl rounded-2xl p-8 w-full max-w-md text-black">
             <!-- Encabezado -->
             <div class="flex justify-center mb-6">
                 <img src="{{ asset('images/logo-maguilop.png') }}" alt="Maguilop Logo" class="h-16 w-auto">
@@ -34,14 +39,14 @@
 
                 <!-- Usuario -->
                 <div>
-                    <label for="NombreUsuario" class="block mb-1">Nombre de Usuario</label>
-                    <div class="flex items-center bg-white/20 rounded-lg px-3">
-                        <svg class="w-5 h-5 text-white opacity-70 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <label for="NombreUsuario" class="block mb-1 text-black font-semibold">Nombre de Usuario</label>
+                    <div class="flex items-center bg-gray-100 rounded-lg px-3">
+                        <svg class="w-5 h-5 text-gray-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M5.121 17.804A6 6 0 0112 15a6 6 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         <input id="NombreUsuario" name="NombreUsuario" type="text"
-                               class="bg-transparent w-full py-2 outline-none placeholder-white"
+                               class="bg-transparent w-full py-2 outline-none placeholder-gray-500 text-black"
                                placeholder="Nombre de Usuario" maxlength="50" required autofocus />
                     </div>
                     <p id="usuarioError" class="error-message"></p>
@@ -49,17 +54,17 @@
 
                 <!-- Contraseña -->
                 <div>
-                    <label for="password" class="block mb-1">Contraseña</label>
-                    <div class="flex items-center bg-white/20 rounded-lg px-3 relative">
-                        <svg class="w-5 h-5 text-white opacity-70 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <label for="password" class="block mb-1 text-black font-semibold">Contraseña</label>
+                    <div class="flex items-center bg-gray-100 rounded-lg px-3 relative">
+                        <svg class="w-5 h-5 text-gray-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M12 15v2m0 0v2m0-2h2m-2 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <input id="password" name="password" type="password"
-                               class="bg-transparent w-full py-2 outline-none placeholder-white pr-10"
+                               class="bg-transparent w-full py-2 outline-none placeholder-gray-500 text-black pr-10"
                                placeholder="Contraseña" required maxlength="50" />
                         <!-- Ojito -->
-                        <button type="button" onclick="togglePassword()" class="absolute right-3 text-white opacity-70 focus:outline-none">
+                        <button type="button" onclick="togglePassword()" class="absolute right-3 text-gray-700 focus:outline-none">
                             <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                  viewBox="0 0 24 24" stroke="currentColor">
                                 <path id="eyePath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -76,16 +81,16 @@
 
                 <!-- Recordar y enlace -->
                 <div class="flex justify-between text-sm opacity-90">
-                    <label class="inline-flex items-center">
+                    <label class="inline-flex items-center text-black">
                         <input type="checkbox" name="remember" class="form-checkbox text-indigo-500 mr-2">
                         Recordar
                     </label>
-                    <a href="{{ route('password.request') }}" class="hover:underline">¿Olvidaste tu contraseña?</a>
+                    <a href="{{ route('password.request') }}" class="hover:underline text-black">¿Olvidaste tu contraseña?</a>
                 </div>
 
                 <!-- Botón -->
                 <button type="submit"
-                    class="w-full bg-white text-purple-800 font-bold py-2 rounded-full hover:bg-gray-200 transition">
+                    class="w-full bg-purple-700 text-white font-bold py-2 rounded-full hover:bg-purple-800 transition">
                     Iniciar Sesión
                 </button>
 

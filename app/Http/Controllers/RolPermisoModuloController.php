@@ -20,6 +20,9 @@ class RolPermisoModuloController extends Controller
 
     // Usa exactamente los mismos nombres que en el sidebar / PermisosHelper
     $modulos = [
+
+        'Dashboard',
+        
         // Seguridad
         'Usuarios',
         'Roles',

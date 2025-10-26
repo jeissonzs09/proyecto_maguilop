@@ -65,11 +65,12 @@
         {{-- MENÚ (scroll propio) --}}
         <nav class="flex-1 px-4 py-4 text-sm space-y-2 overflow-y-auto h-[calc(100vh-5rem)]">
             <div class="uppercase text-orange-200 text-xs tracking-wide mb-2">Menú principal</div>
-
+            @if(PermisosHelper::tienePermiso('Dashboard', 'ver'))
             <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 px-3 py-2 rounded hover:bg-orange-600/70 transition">
                 <i class="fas fa-tachometer-alt w-4 h-4"></i>
                 <span>Dashboard</span>
             </a>
+            @endif
 
             {{-- Gestión Persona --}}
             <div x-data="{ open: false }">

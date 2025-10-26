@@ -208,7 +208,7 @@ Route::resource('bitacoras', BitacoraController::class)->except(['show']);
 
 Route::get('/personas/exportar-excel', [PersonaController::class, 'exportarExcel'])->name('persona.exportarExcel');
 
-
+Route::get('/bienvenida', [App\Http\Controllers\BienvenidaController::class, 'index'])->name('bienvenida');
 
 // Incluir otras rutas de autenticación si existen
 require __DIR__.'/auth.php';

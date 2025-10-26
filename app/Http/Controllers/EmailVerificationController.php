@@ -34,7 +34,7 @@ class EmailVerificationController extends Controller
             // Marca en sesión como verificado
             session(['2fa_passed' => true]);
 
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/bienvenida');
         }
 
         return back()->withErrors(['code' => 'Código inválido o expirado.']);
