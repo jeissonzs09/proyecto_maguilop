@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
+use App\Models\User;
 
 class PasswordResetLinkController extends Controller
 {
@@ -23,24 +24,32 @@ class PasswordResetLinkController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-public function store(Request $request): RedirectResponse
-{
-    $request->validate([
-        'email' => 'required|email',
-    ]);
+    public function store(Request $request): RedirectResponse
+    {
+        // Quitar espacios del email
+        $request->merge([
+            'email' => trim($request->email),
+        ]);
 
-    $user = \App\Models\User::where('CorreoElectronico', $request->email)->first();
+        // Validar email
+        $request->validate([
+            'email' => ['required', 'email', 'string', 'max:255', 'regex:/^\S*$/u'],
+        ]);
 
-    if (! $user) {
-        return back()->withErrors(['email' => 'No se encontró un usuario con ese correo.']);
+        // Buscar usuario
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            return back()->withErrors(['email' => 'No se encontró un usuario con ese correo.']);
+        }
+
+        // Enviar enlace de restablecimiento
+        $status = Password::sendResetLink([
+            'email' => $user->email,
+        ]);
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('status', __($status))
+            : back()->withErrors(['email' => __($status)]);
     }
-
-    $status = Password::sendResetLink(
-        ['email' => $user->CorreoElectronico]
-    );
-
-    return $status === Password::RESET_LINK_SENT
-                ? back()->with('status', __($status))
-                : back()->withErrors(['email' => __($status)]);
-}
 }

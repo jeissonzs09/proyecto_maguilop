@@ -186,5 +186,29 @@ Route::get('/test-email', function () {
     return 'Correo enviado';
 });
 
+// Rutas adicionales de Bitácora
+Route::get('/bitacoras/exportar-pdf', [BitacoraController::class, 'exportarPDF'])
+     ->name('bitacoras.exportarPDF');
+
+Route::get('/bitacoras/exportar-excel', [BitacoraController::class, 'exportarExcel'])
+     ->name('bitacoras.exportarExcel');
+
+// Eliminar toda la bitácora con respaldo PDF
+Route::delete('/bitacoras/destroy-pdf', [BitacoraController::class, 'destroyWithPDF'])
+     ->name('bitacoras.destroyPDF');
+
+
+// Activar/Desactivar bitácora
+Route::post('/bitacoras/toggle', [BitacoraController::class, 'toggleBitacora'])
+     ->name('bitacoras.toggle');
+
+
+// Rutas de recurso básicas (CRUD)
+Route::resource('bitacoras', BitacoraController::class)->except(['show']);
+
+Route::get('/personas/exportar-excel', [PersonaController::class, 'exportarExcel'])->name('persona.exportarExcel');
+
+
+
 // Incluir otras rutas de autenticación si existen
 require __DIR__.'/auth.php';

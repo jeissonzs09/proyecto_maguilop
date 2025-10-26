@@ -4,89 +4,159 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Bitacora;
+use App\Models\Configuracion;
 use App\Helpers\PermisosHelper;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BitacoraController extends Controller
 {
-    public function index()
-{
-    if (!PermisosHelper::tienePermiso('Bitacora', 'ver')) {
-        abort(403, 'No tienes permiso para ver esta sección.');
-    }
-
-    // Ordenar por ID descendente (más nuevos primero)
-    $bitacoras = Bitacora::orderBy('BitacoraID', 'desc')->paginate(20);
-
-    return view('bitacoras.index', compact('bitacoras'));
-}
-
-
-    public function create()
+    public function index(Request $request)
     {
-        if (!PermisosHelper::tienePermiso('Bitacora', 'crear')) {
-            abort(403);
+        if (!PermisosHelper::tienePermiso('Bitacora', 'ver')) {
+            abort(403, 'No tienes permiso para ver esta sección.');
         }
 
-        return view('bitacoras.create');
-    }
+        $query = Bitacora::query()->orderBy('BitacoraID', 'desc');
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'UsuarioID' => 'required|integer',
-            'Accion' => 'required|string|max:100',
-            'TablaAfectada' => 'required|string|max:100',
-            'FechaAccion' => 'nullable|date',
-            'Descripcion' => 'required|string',
-            'DatosPrevios' => 'nullable|string',
-            'DatosNuevos' => 'nullable|string',
-            'Modulo' => 'nullable|string|max:50',
-            'Resultado' => 'nullable|string|max:50',
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('UsuarioID', 'LIKE', "%{$search}%")
+                  ->orWhere('Accion', 'LIKE', "%{$search}%")
+                  ->orWhere('TablaAfectada', 'LIKE', "%{$search}%")
+                  ->orWhere('FechaAccion', 'LIKE', "%{$search}%")
+                  ->orWhere('Descripcion', 'LIKE', "%{$search}%")
+                  ->orWhere('DatosPrevios', 'LIKE', "%{$search}%")
+                  ->orWhere('DatosNuevos', 'LIKE', "%{$search}%")
+                  ->orWhere('Modulo', 'LIKE', "%{$search}%")
+                  ->orWhere('Resultado', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $perPage = $request->input('per_page', 20);
+        $bitacoras = $query->paginate($perPage)->appends([
+            'per_page' => $perPage,
+            'search'   => $request->search
         ]);
 
-        Bitacora::create($request->all());
+        $config = Configuracion::first();
 
-        return redirect()->route('bitacoras.index')->with('success', 'Bitácora registrada correctamente.');
+        return view('bitacoras.index', compact('bitacoras', 'config', 'perPage'));
     }
 
-    public function edit($id)
+    public function exportarPDF(Request $request)
     {
-        if (!PermisosHelper::tienePermiso('Bitacora', 'editar')) {
-            abort(403);
+        $config = Configuracion::first();
+        if (!$config || !$config->bitacora_activa) {
+            return redirect()->route('bitacoras.index')
+                             ->with('error', 'La bitácora está desactivada. No se puede exportar.');
         }
 
-        $bitacora = Bitacora::findOrFail($id);
-        return view('bitacoras.edit', compact('bitacora'));
-    }
+        $query = Bitacora::query();
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'UsuarioID' => 'required|integer',
-            'Accion' => 'required|string|max:100',
-            'TablaAfectada' => 'required|string|max:100',
-            'FechaAccion' => 'nullable|date',
-            'Descripcion' => 'required|string',
-            'DatosPrevios' => 'nullable|string',
-            'DatosNuevos' => 'nullable|string',
-            'Modulo' => 'nullable|string|max:50',
-            'Resultado' => 'nullable|string|max:50',
-        ]);
-
-        $bitacora = Bitacora::findOrFail($id);
-        $bitacora->update($request->all());
-
-        return redirect()->route('bitacoras.index')->with('success', 'Bitácora actualizada correctamente.');
-    }
-
-    public function destroy($id)
-    {
-        if (!PermisosHelper::tienePermiso('Bitacora', 'eliminar')) {
-            abort(403);
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('UsuarioID', 'LIKE', "%{$search}%")
+                  ->orWhere('Accion', 'LIKE', "%{$search}%")
+                  ->orWhere('TablaAfectada', 'LIKE', "%{$search}%")
+                  ->orWhere('FechaAccion', 'LIKE', "%{$search}%")
+                  ->orWhere('Descripcion', 'LIKE', "%{$search}%")
+                  ->orWhere('DatosPrevios', 'LIKE', "%{$search}%")
+                  ->orWhere('DatosNuevos', 'LIKE', "%{$search}%")
+                  ->orWhere('Modulo', 'LIKE', "%{$search}%")
+                  ->orWhere('Resultado', 'LIKE', "%{$search}%");
+            });
         }
 
-        Bitacora::findOrFail($id)->delete();
+       $bitacoras = $query->orderBy('BitacoraID','desc')->get();
+$pdf = Pdf::loadView('bitacoras.pdf', compact('bitacoras'))
+          ->setPaper('a4', 'landscape');
+return $pdf->download('bitacora.pdf');
 
-        return redirect()->route('bitacoras.index')->with('success', 'Bitácora eliminada correctamente.');
+
+    }
+
+    public function exportarExcel(Request $request)
+    {
+        $query = Bitacora::query();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('UsuarioID', 'LIKE', "%{$search}%")
+                  ->orWhere('Accion', 'LIKE', "%{$search}%")
+                  ->orWhere('TablaAfectada', 'LIKE', "%{$search}%")
+                  ->orWhere('FechaAccion', 'LIKE', "%{$search}%")
+                  ->orWhere('Descripcion', 'LIKE', "%{$search}%")
+                  ->orWhere('DatosPrevios', 'LIKE', "%{$search}%")
+                  ->orWhere('DatosNuevos', 'LIKE', "%{$search}%")
+                  ->orWhere('Modulo', 'LIKE', "%{$search}%")
+                  ->orWhere('Resultado', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $bitacoras = $query->orderBy('BitacoraID','desc')->get();
+
+        $filename = 'bitacoras.csv';
+        $handle = fopen($filename, 'w+');
+        fputcsv($handle, ['ID', 'UsuarioID', 'Accion', 'TablaAfectada', 'FechaAccion', 'Descripcion', 'DatosPrevios','DatosNuevos','Modulo', 'Resultado']);
+
+        foreach ($bitacoras as $b) {
+            fputcsv($handle, [
+                $b->BitacoraID,
+                $b->UsuarioID,
+                $b->Accion,
+                $b->TablaAfectada,
+                $b->FechaAccion,
+                $b->Descripcion,
+                $b->DatosPrevios,
+                $b->DatosNuevos,
+                $b->Modulo,
+                $b->Resultado,
+                $b->FechaAccion
+            ]);
+        }
+
+        fclose($handle);
+
+        return response()->download($filename)->deleteFileAfterSend(true);
+    }
+
+    public function destroyWithPDF()
+    {
+        $config = Configuracion::first();
+        if (!$config || !$config->bitacora_activa) {
+            return redirect()->route('bitacoras.index')->with('error', 'La bitácora está desactivada. No se puede eliminar.');
+        }
+
+        $bitacoras = Bitacora::orderBy('BitacoraID', 'desc')->get();
+        $pdf = Pdf::loadView('bitacoras.pdf', compact('bitacoras'))
+    ->setPaper('a4', 'landscape')
+    ->setOption([
+        'isHtml5ParserEnabled' => true,
+        'isRemoteEnabled' => true,
+    ]);
+
+        $filename = 'bitacora_completa_'.now()->format('Ymd_His').'.pdf';
+
+        Bitacora::truncate();
+
+        return $pdf->download($filename);
+    }
+
+    public function toggleBitacora()
+    {
+        $config = Configuracion::first() ?? new Configuracion();
+        $config->bitacora_activa = !$config->bitacora_activa;
+        $config->save();
+
+        $estado = $config->bitacora_activa ? 'activada' : 'desactivada';
+        return redirect()->route('bitacoras.index')->with('success', "Bitácora $estado correctamente.");
+    }
+
+    public function show($id)
+    {
+        return redirect()->route('bitacoras.index'); // Evita errores de Route::resource
     }
 }

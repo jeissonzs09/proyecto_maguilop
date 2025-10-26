@@ -10,13 +10,35 @@
     @endphp
 
     <div x-data="usuarioModales()" x-init="initUsuarios()">
-        {{-- Botón de crear usuario --}}
-        @if($permisos::tienePermiso('Usuarios', 'crear'))
-            <button @click="openModal"
-                    class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow">
-                <i class="fas fa-user-plus"></i> Nuevo usuario
-            </button>
-        @endif
+        {{-- Barra de búsqueda y botón crear --}}
+        <div class="flex justify-between items-center mb-4">
+            {{-- Búsqueda --}}
+            <div class="flex-1 max-w-md">
+                <form method="GET" action="{{ route('usuarios.index') }}" class="flex gap-2">
+                    <input type="text" name="search" value="{{ request('search') }}" 
+                           placeholder="Buscar por usuario, correo o rol..."
+                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button type="submit" 
+                            class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    @if(request('search'))
+                        <a href="{{ route('usuarios.index') }}" 
+                           class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    @endif
+                </form>
+            </div>
+
+            {{-- Botón de crear usuario --}}
+            @if($permisos::tienePermiso('Usuarios', 'crear'))
+                <button @click="openModal"
+                        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow">
+                    <i class="fas fa-user-plus"></i> Nuevo usuario
+                </button>
+            @endif
+        </div>
 
         {{-- Tabla --}}
         <div class="overflow-x-auto bg-white rounded-lg shadow mt-4">
@@ -31,11 +53,11 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    @foreach($usuarios as $usuario)
+                    @forelse($usuarios as $usuario)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-4 py-2">{{ $usuario->UsuarioID }}</td>
                             <td class="px-4 py-2">{{ $usuario->NombreUsuario }}</td>
-                            <td class="px-4 py-2">{{ $usuario->TipoUsuario }}</td>
+                            <td class="px-4 py-2">{{ strtoupper($usuario->TipoUsuario) }}</td>
                             <td class="px-4 py-2">{{ $usuario->CorreoElectronico }}</td>
                             <td class="px-4 py-2 text-center">
                                 <div class="flex items-center justify-center gap-2">
@@ -65,15 +87,37 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                @if(request('search'))
+                                    <div class="flex flex-col items-center">
+                                        <i class="fas fa-search text-4xl text-gray-300 mb-2"></i>
+                                        <p class="text-lg font-medium">No se encontraron usuarios</p>
+                                        <p class="text-sm">No hay resultados para "{{ request('search') }}"</p>
+                                        <a href="{{ route('usuarios.index') }}" 
+                                           class="mt-2 text-blue-600 hover:text-blue-800 underline">
+                                            Ver todos los usuarios
+                                        </a>
+                                    </div>
+                                @else
+                                    <div class="flex flex-col items-center">
+                                        <i class="fas fa-users text-4xl text-gray-300 mb-2"></i>
+                                        <p class="text-lg font-medium">No hay usuarios registrados</p>
+                                        <p class="text-sm">Comienza creando tu primer usuario</p>
+                                    </div>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
 
             
         </div>
         <div class="mt-4">
-    {{ $usuarios->links() }}
-</div>
+            {{ $usuarios->appends(request()->query())->links() }}
+        </div>
 
 
         {{-- Modal de Crear Usuario --}}
@@ -99,13 +143,12 @@
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700">Nombre de Usuario</label>
                         <input type="text" name="NombreUsuario" required
-       class="w-full border rounded px-3 py-2 shadow-sm focus:ring focus:ring-blue-200"
-       maxlength="30"
-       title="Solo letras, números y guiones bajos"
-       @input="
-           let val = $event.target.value.replace(/[^a-zA-Z0-9_]/g, '');
-           $event.target.value = val;
-       " />
+                               minlength="3" maxlength="30" 
+                               pattern="^[A-Z0-9_]+$"
+                               title="Solo letras mayúsculas, números y guiones bajos (3-30 caracteres)"
+                               class="w-full border rounded px-3 py-2 shadow-sm focus:ring focus:ring-blue-200 uppercase"
+                               oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g, '')" />
+                        <p class="text-xs text-gray-500 mt-1">Solo letras mayúsculas, números y guiones bajos (3-30 caracteres)</p>
                     </div>
 
                     {{-- Rol --}}
@@ -124,10 +167,12 @@
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
                         <input type="email" name="correo" required
-       pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$"
-       title="Ingrese un correo válido con @"
-       class="w-full border rounded px-3 py-2 shadow-sm focus:ring focus:ring-blue-200" />
-
+                               minlength="5" maxlength="100"
+                               pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$"
+                               title="Ingrese un correo válido sin espacios"
+                               class="w-full border rounded px-3 py-2 shadow-sm focus:ring focus:ring-blue-200 lowercase"
+                               oninput="this.value = this.value.toLowerCase().replace(/\s/g, '')" />
+                        <p class="text-xs text-gray-500 mt-1">Correo válido sin espacios (5-100 caracteres)</p>
                     </div>
                     {{-- Empleado --}}
                     <div class="mb-4">
@@ -140,6 +185,17 @@
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+
+
+                    {{-- Fecha de Vencimiento --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Fecha de Vencimiento</label>
+                        <input type="date" name="FechaVencimiento" 
+                               value="{{ now()->addDays(365)->format('Y-m-d') }}" 
+                               min="{{ now()->format('Y-m-d') }}"
+                               class="w-full border rounded px-3 py-2 shadow-sm focus:ring focus:ring-blue-200" />
+                        <p class="text-xs text-gray-500 mt-1">Fecha de vencimiento del usuario (mínimo: hoy)</p>
                     </div>
 
                     {{-- Botones --}}
@@ -181,23 +237,25 @@
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700">Nombre de Usuario</label>
                         <input type="text" name="nombre_usuario" required
-       maxlength="30"
-       pattern="^[a-zA-Z0-9_]+$"
-       title="Solo letras, números y guiones bajos"
-       class="w-full border rounded px-3 py-2"
-       x-model="usuarioEditar.NombreUsuario"
-       @input="$event.target.value = $event.target.value.replace(/[^a-zA-Z0-9_]/g, '')">
-
+                               minlength="3" maxlength="30" 
+                               pattern="^[A-Z0-9_]+$"
+                               title="Solo letras mayúsculas, números y guiones bajos (3-30 caracteres)"
+                               class="w-full border rounded px-3 py-2 uppercase"
+                               x-model="usuarioEditar.NombreUsuario"
+                               @input="$event.target.value = $event.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '')">
+                        <p class="text-xs text-gray-500 mt-1">Solo letras mayúsculas, números y guiones bajos (3-30 caracteres)</p>
                     </div>
 
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
                         <input type="email" name="correo" required
-       pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$"
-       title="Ingrese un correo válido con @"
-       class="w-full border rounded px-3 py-2"
-       x-model="usuarioEditar.CorreoElectronico">
-
+                               minlength="5" maxlength="100"
+                               pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$"
+                               title="Ingrese un correo válido sin espacios"
+                               class="w-full border rounded px-3 py-2 lowercase"
+                               x-model="usuarioEditar.CorreoElectronico"
+                               @input="$event.target.value = $event.target.value.toLowerCase().replace(/\s/g, '')">
+                        <p class="text-xs text-gray-500 mt-1">Correo válido sin espacios (5-100 caracteres)</p>
                     </div>
 
                     <div class="mb-4">
@@ -220,6 +278,15 @@
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Fecha de Vencimiento</label>
+                        <input type="date" name="FechaVencimiento" 
+                               min="{{ now()->format('Y-m-d') }}"
+                               class="w-full border rounded px-3 py-2 shadow-sm focus:ring focus:ring-blue-200"
+                               x-model="usuarioEditar.FechaVencimiento" />
+                        <p class="text-xs text-gray-500 mt-1">Fecha de vencimiento del usuario (mínimo: hoy)</p>
                     </div>
 
                     <div class="flex justify-between mt-6">
@@ -265,9 +332,11 @@
                 @if(session('error'))
                     Toast.fire({ icon: 'error', title: "{{ session('error') }}" });
                 @endif
+                
             }
         };
     }
+
     </script>
 
     @php

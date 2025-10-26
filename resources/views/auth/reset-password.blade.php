@@ -14,7 +14,8 @@
                  showPassword: false,
                  showConfirm: false,
                  isValidPassword() {
-                     return /^(?=.*[A-Z])(?=.*\d).{8,}$/.test(this.password);
+                     // Regex actualizado: mayúscula, número, carácter especial, sin espacios
+                     return /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,255}$/.test(this.password);
                  },
                  passwordsMatch() {
                      return this.password === this.confirmPassword;
@@ -24,6 +25,20 @@
             <!-- Logo -->
             <div class="flex justify-center mb-6">
                 <img src="{{ asset('images/logo-maguilop.png') }}" alt="Maguilop Logo" class="h-16 w-auto">
+            </div>
+
+            <!-- Mensaje de ayuda con soporte -->
+            <div class="text-center text-sm mb-4">
+                Si necesitas ayuda contactanos: <br>
+                <a href="mailto:maguilop2.hn@gmail.com" 
+                   class="underline text-blue-300 hover:text-blue-400 font-semibold">
+                    📧 Enviar un correo a soporte
+                </a> <br>
+                o <br>
+                <a href="https://wa.me/50495020203" target="_blank" 
+                   class="underline text-green-300 hover:text-green-400 font-semibold">
+                    💬 Contactar por WhatsApp
+                </a>
             </div>
 
             <form method="POST" action="{{ route('password.store') }}" class="space-y-5">
@@ -51,16 +66,17 @@
                                x-model="password"
                                id="password" name="password"
                                class="bg-white/20 w-full py-2 px-3 rounded-lg text-white placeholder-white outline-none pr-10"
-                               required autocomplete="new-password" placeholder="Nueva contraseña" />
+                               required autocomplete="new-password" placeholder="Nueva contraseña"
+                               oninput="this.value = this.value.replace(/\s/g, '')" />
                         <button type="button" @click="showPassword = !showPassword"
                                 class="absolute inset-y-0 right-3 flex items-center text-white">
                             👁
                         </button>
                     </div>
                     <p class="text-sm mt-1 font-semibold"
-   :class="isValidPassword() ? 'text-green-700' : 'text-red-700'">
-    Debe tener al menos 8 caracteres, 1 mayúscula y 1 número.
-</p>
+                       :class="isValidPassword() ? 'text-green-700' : 'text-green-700'">
+                        Debe tener entre 8 y 255 caracteres, 1 mayúscula, 1 número, 1 carácter especial y <strong>sin espacios</strong>.
+                    </p>
                     <x-input-error :messages="$errors->get('password')" class="mt-2 text-red-200"/>
                 </div>
 
@@ -72,19 +88,31 @@
                                x-model="confirmPassword"
                                id="password_confirmation" name="password_confirmation"
                                class="bg-white/20 w-full py-2 px-3 rounded-lg text-white placeholder-white outline-none pr-10"
-                               required autocomplete="new-password" placeholder="Confirmar contraseña" />
+                               required autocomplete="new-password" placeholder="Confirmar contraseña"
+                               oninput="this.value = this.value.replace(/\s/g, '')" />
                         <button type="button" @click="showConfirm = !showConfirm"
                                 class="absolute inset-y-0 right-3 flex items-center text-white">
                             👁
                         </button>
                     </div>
                     
-<p class="text-sm mt-1 font-semibold"
-   :class="passwordsMatch() ? 'text-green-700' : 'text-red-700'">
-    Las contraseñas deben coincidir.
-</p>
+                    <p class="text-sm mt-1 font-semibold"
+                       :class="passwordsMatch() ? 'text-green-700' : 'text-green-700'">
+                        Las contraseñas deben coincidir y no contener espacios.
+                    </p>
                     <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2 text-red-200"/>
                 </div>
+
+                <!-- Mensajes informativos generales -->
+                <p class="text-sm mt-1 text-gray-200">
+                    ✅ La contraseña debe tener mínimo 8 y máximo 255 caracteres.<br>
+                    ✅ Debe contener al menos 1 mayúscula, 1 número, 1 carácter especial y no tener espacios.<br>
+                    ✅ La nueva contraseña no puede ser igual a la anterior.<br>
+                    ✅ El enlace de recuperación solo funciona una vez (token único).<br>
+                    <span x-show="isValidPassword() && passwordsMatch()" class="text-green-400">
+                        ✅ La contraseña proporcionada es robusta y cumple con las políticas de validación.
+                    </span>
+                </p>
 
                 <!-- Submit -->
                 <button type="submit"

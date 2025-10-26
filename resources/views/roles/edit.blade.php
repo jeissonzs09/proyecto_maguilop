@@ -11,13 +11,24 @@
             @method('PUT')
 
             {{-- Descripción --}}
-            <div class="mb-4">
+            <div class="mb-4 relative">
                 <label for="Descripcion" class="block text-sm font-medium text-gray-700">Descripción del Rol</label>
                 <input type="text" name="Descripcion" id="Descripcion"
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                       value="{{ old('Descripcion', $rol->Descripcion) }}" required>
+                       value="{{ old('Descripcion', $rol->Descripcion) }}"
+                       maxlength="255" required>
+
+                {{-- Contador alineado a la derecha --}}
+                <p id="charCount" class="absolute right-0 mt-1 text-xs text-gray-500">
+                    {{ 255 - strlen(old('Descripcion', $rol->Descripcion)) }} caracteres restantes
+                </p>
+
+                {{-- Mensajes dinámicos --}}
+                <p id="errorDescripcion" class="text-sm text-red-600 mt-1 hidden"></p>
+
+                {{-- Error de backend --}}
                 @error('Descripcion')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    <p data-error-backend class="text-sm text-red-600 mt-1">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -26,8 +37,8 @@
                 <label for="Estado" class="block text-sm font-medium text-gray-700">Estado</label>
                 <select name="Estado" id="Estado"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500" required>
-                    <option value="Activo" {{ $rol->Estado == 'Activo' ? 'selected' : '' }}>Activo</option>
-                    <option value="Inactivo" {{ $rol->Estado == 'Inactivo' ? 'selected' : '' }}>Inactivo</option>
+                    <option value="Activo" {{ old('Estado', $rol->Estado) == 'Activo' ? 'selected' : '' }}>Activo</option>
+                    <option value="Inactivo" {{ old('Estado', $rol->Estado) == 'Inactivo' ? 'selected' : '' }}>Inactivo</option>
                 </select>
                 @error('Estado')
                     <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
@@ -47,5 +58,57 @@
             </div>
         </form>
     </div>
-</x-app-layout>
 
+    {{-- Script validaciones frontend --}}
+    <script>
+        const descripcionInput = document.getElementById('Descripcion');
+        const errorDescripcion = document.getElementById('errorDescripcion');
+        const charCount = document.getElementById('charCount');
+        const backendError = document.querySelector('[data-error-backend]');
+        const maxLength = 255;
+
+        descripcionInput.addEventListener('input', function () {
+            // Normalizar texto
+            this.value = this.value
+                .toUpperCase()
+                .replace(/[^A-ZÁÉÍÓÚÑ\s]/g, '') // solo letras y espacios
+                .replace(/^\s+/, '');           // quitar espacios iniciales
+
+            const value = this.value.trim();
+            const remaining = maxLength - value.length;
+            charCount.textContent = ${remaining} caracteres restantes;
+
+            // Ocultar error backend al escribir
+            if (backendError) backendError.style.display = 'none';
+
+            // Resetear mensaje
+            errorDescripcion.textContent = "";
+            errorDescripcion.classList.add('hidden');
+
+            if (value === "") return;
+
+            if (value.length < 4) {
+                errorDescripcion.textContent = "El rol debe tener al menos 4 caracteres.";
+                errorDescripcion.classList.remove('hidden');
+                return;
+            }
+
+            // Ejemplo de duplicados
+            const duplicados = ["ADMIN", "USUARIO"];
+            if (duplicados.includes(value)) {
+                errorDescripcion.textContent = "Este rol ya existe.";
+                errorDescripcion.classList.remove('hidden');
+                return;
+            }
+        });
+
+        // Extra: limpiar errores si campo queda vacío
+        descripcionInput.addEventListener('blur', function () {
+            if (this.value.trim() === "") {
+                errorDescripcion.textContent = "";
+                errorDescripcion.classList.add('hidden');
+                if (backendError) backendError.style.display = 'none';
+            }
+        });
+    </script>
+</x-app-layout>

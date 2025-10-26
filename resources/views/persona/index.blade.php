@@ -4,7 +4,7 @@
             <i class="fas fa-users"></i> Personas
         </h2>
     </x-slot>
-
+<div x-data="personasModal()">
     @php
         $permisos = \App\Helpers\PermisosHelper::class;
     @endphp
@@ -45,8 +45,18 @@
                    class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md shadow whitespace-nowrap">
                     <i class="fas fa-file-pdf"></i> Exportar PDF
                 </a>
+
+<!-- Botón Excel -->
+    <a href="{{ route('persona.exportarExcel', ['search' => request('search')]) }}"
+       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow whitespace-nowrap">
+        <i class="fas fa-file-excel"></i> Exportar Excel
+    </a>
+
             </div>
 
+
+
+            
             @if($permisos::tienePermiso('Persona', 'crear'))
                 <div>
                     <button
@@ -59,10 +69,37 @@
             @endif
         </div>
 
+       @if(request('success'))
+<div 
+    x-data="{ show: true }" 
+    x-show="show" 
+    x-transition:enter="transform ease-out duration-300 transition"
+    x-transition:enter-start="scale-95 opacity-0"
+    x-transition:enter-end="scale-100 opacity-100"
+    x-transition:leave="transform ease-in duration-300 transition"
+    x-transition:leave-start="scale-100 opacity-100"
+    x-transition:leave-end="scale-95 opacity-0"
+    x-init="setTimeout(() => show = false, 3000)" 
+    class="fixed inset-0 flex items-center justify-center z-50"
+>
+    <div class="bg-green-600 text-white px-8 py-5 rounded-full shadow-2xl flex items-center space-x-6">
+        <span class="flex items-center justify-center w-10 h-10 border-4 border-white rounded-full bg-transparent">
+            <svg class="w-5 h-5" fill="none" stroke="white" stroke-width="5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+        </span>
+        <span>{{ request('success') }}</span>
+    </div>
+</div>
+@endif
+
+
+
+        
         {{-- Tabla de personas --}}
         <div class="overflow-x-auto bg-white rounded-lg shadow mt-4">
             <table class="min-w-full text-sm text-gray-800">
-                <thead class="bg-orange-500 text-white text-sm uppercase">
+                <thead class="bg-orange-500 text-white text-sm ">
                     <tr>
                         <th class="px-4 py-3 text-center">ID</th>
                         <th class="px-4 py-3 text-center">Nombre</th>
@@ -71,6 +108,7 @@
                         <th class="px-4 py-3 text-center">Género</th>
                         <th class="px-4 py-3 text-center">Correo Electrónico</th>
                         <th class="px-4 py-3 text-center">Teléfonos</th>
+                        <th class="px-4 py-3 text-center">Estado</th>
                         <th class="px-4 py-3 text-center">Acciones</th>
                     </tr>
                 </thead>
@@ -90,6 +128,19 @@
                                     @endforeach
                                 </ul>
                             </td>
+
+
+<td class="px-4 py-2 text-center">
+    @if($persona->Activo)
+        <span class="text-green-600 font-semibold">Activa</span>
+    @else
+        <span class="text-red-600 font-semibold">Inactiva</span>
+    @endif
+</td>
+
+
+
+
                             <td class="px-4 py-2 text-center">
                                 <div class="flex items-center justify-center gap-2">
                                     @if($permisos::tienePermiso('Persona', 'editar'))
@@ -118,6 +169,17 @@
                                             >
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
+
+<a href="{{ route('personas.toggle', $persona->PersonaID) }}"
+   class="p-2 rounded-full text-white 
+          {{ $persona->Activo ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700' }}"
+   title="{{ $persona->Activo ? 'Desactivar' : 'Activar' }}">
+    <i class="fas {{ $persona->Activo ? 'fa-ban' : 'fa-check' }}"></i>
+</a>
+
+
+
+
                                         </form>
                                     @endif
                                 </div>
@@ -130,10 +192,30 @@
             </table>
         </div>
 
-        {{-- Paginación --}}
-        <div class="mt-4">
-            {{ $personas->appends(['search' => request('search')])->links() }}
-        </div>
+      {{-- Controles de paginación y cantidad por página --}}
+<div class="flex items-center justify-between mb-2">
+    {{-- Número de registros por página --}}
+    <form method="GET" class="flex items-center gap-2">
+        <label for="perPage" class="font-semibold text-gray-700">Mostrar</label>
+        <input type="number" name="perPage" id="perPage"
+               class="border border-gray-300 rounded px-2 py-1 w-10"
+               value="{{ request('perPage', 10) }}"
+               min="1"
+               onchange="this.form.submit()">
+        <span class="text-gray-600">registros por página</span>
+
+        {{-- Mantener búsqueda --}}
+        <input type="hidden" name="search" value="{{ request('search') }}">
+    </form>
+
+    {{-- Paginación --}}
+    <div>
+        {{ $personas->appends(['search' => request('search'), 'perPage' => request('perPage', 10)])->links() }}
+    </div>
+</div>
+
+
+
 
         {{-- Modal Crear --}}
         <div
@@ -183,7 +265,8 @@
         errorNombreRepetido = false;
     }
 "
-
+    @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"
     class="w-full border rounded px-3 py-2"
     :class="{ 'border-red-500': errorNombreRepetido }"
 />
@@ -213,6 +296,8 @@
                                   .replace(/\s+/g,' ')
                                   .trimStart()
                             "
+                            @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"
                             class="w-full border rounded px-3 py-2 @error('Apellido') border-red-500 @enderror"
                         />
                         @error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
@@ -229,6 +314,8 @@
                             type="date" name="FechaNacimiento" id="FechaNacimiento" required
                             value="{{ old('FechaNacimiento') }}"
                             x-model="createForm.FechaNacimiento"
+                            @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"
                             class="w-full border rounded px-3 py-2 @error('FechaNacimiento') border-red-500 @enderror"
                         />
                         @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
@@ -269,6 +356,8 @@
     pattern="^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$"
     title="Debe tener al menos 4 caracteres antes y después de @ y un dominio válido"
     @input="createForm.CorreoElectronico = $event.target.value.trim()"
+    @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"
     class="w-full border rounded px-3 py-2"
     :class="{
         'border-red-500': createForm.CorreoElectronico && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(createForm.CorreoElectronico),
@@ -298,6 +387,7 @@
                         <h4 class="text-md font-semibold mb-2 text-gray-700">Teléfonos</h4>
 
                         <template x-for="(telefono, index) in telefonos" :key="index">
+                            
                             <div class="grid grid-cols-2 gap-2 mb-3">
                                 <div>
                                     <label :for="'Tipo' + index" class="block text-gray-600 text-sm font-bold mb-1">Tipo</label>
@@ -312,19 +402,39 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label :for="'Numero' + index" class="block text-gray-600 text-sm font-bold mb-1">Número</label>
-                                    <input
-                                        type="text"
-                                        :name="'telefonos[' + index + '][Numero]'"
-                                        class="w-full border rounded px-2 py-1"
-                                        x-model="telefono.Numero"
-                                        maxlength="8"
-                                        pattern="^\d{8}$"
-                                        title="Número de 8 dígitos"
-                                        @input="
-                                            telefono.Numero = $event.target.value.replace(/\D/g,'').slice(0,8)
-                                        "
-                                    />
+    <label :for="'Numero' + index" class="block text-gray-600 text-sm font-bold mb-1">Número</label>
+    <input
+        type="text"
+        :name="'telefonos[' + index + '][Numero]'"
+        class="w-full border rounded px-2 py-1"
+        x-model="telefono.Numero"
+        maxlength="8"
+        pattern="^\d{8}$"
+        title="Número de 8 dígitos"
+        @input="telefono.Numero = $event.target.value.replace(/\D/g,'').slice(0,8)"
+        @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"
+    />
+
+    <template x-if="telefonoErrors[index] && telefonoErrors[index].Numero">
+        <p class="text-red-500 text-sm mt-1" x-text="telefonoErrors[index].Numero"></p>
+    </template>
+
+@foreach(old('telefonos', $telefonos ?? []) as $i => $tel)
+    
+        <!-- Mensaje de error solo -->
+        @error("telefonos.$i.Numero")
+            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+@endforeach
+
+
+
+
+
+</div>
+
                                 </div>
                                 <div class="col-span-2 flex justify-end">
                                     <button type="button" @click="removeTelefono(index)" class="text-red-600 hover:underline text-sm">Eliminar</button>
@@ -364,209 +474,166 @@
         </div>
 
         {{-- Modal Editar --}}
-        <div
-            x-show="isEditModalOpen"
-            x-transition
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            @keydown.escape.window="closeEditModal()"
-            style="display: none;"
-            x-cloak
-        >
-            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
-                <button
-                    @click="closeEditModal()"
-                    class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                    title="Cerrar"
-                >&times;</button>
+<div
+    x-show="isEditModalOpen"
+    x-transition
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    @keydown.escape.window="closeEditModal()"
+    x-cloak
+>
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
+        <button
+            @click="closeEditModal()"
+            class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            title="Cerrar"
+        >&times;</button>
 
-            <div class="flex items-center gap-2 mb-4 text-yellow-600 text-2xl">
-                <i class="fas fa-user-edit"></i>
-                <h3 class="font-semibold">Editar Persona</h3>
+        <div class="flex items-center gap-2 mb-4 text-blue-600 text-2xl">
+            <i class="fas fa-user-edit"></i>
+            <h3 class="font-semibold">Editar Persona</h3>
+        </div>
+<div x-show="editSuccessMessage"
+     class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4"
+     x-text="editSuccessMessage"
+     x-transition></div>
+
+
+       <form class="space-y-4" novalidate @submit.prevent="submitEditForm()">
+
+
+            <!-- Nombre -->
+            <div>
+                <label class="block text-gray-700 font-bold mb-2">Nombre</label>
+                <input type="text" x-model="editForm.Nombre"
+                       class="w-full border rounded px-3 py-2"
+                       :class="{ 'border-red-500': errorNombreRepetidoEdit || errors.Nombre }"
+                       @input="
+                           let valor = $event.target.value.replace(/[^A-Za-z ]/g,'').replace(/\s+/g,' ').trimStart();
+                           if(/(.)\1\1+/i.test(valor)){ errorNombreRepetidoEdit = true; $event.target.value = editForm.Nombre; }
+                           else { editForm.Nombre = valor; errorNombreRepetidoEdit = false; }
+                           @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"
+                       "/>
+                <template x-if="errorNombreRepetidoEdit">
+                    <p class="text-red-500 text-sm mt-1">No se permiten más de 2 letras iguales seguidas.</p>
+                </template>
+                <template x-if="errors.Nombre">
+                    <p class="text-red-500 text-sm mt-1" x-text="errors.Nombre[0]"></p>
+                </template>
             </div>
 
-            <form method="POST" :action="actionUrl()" class="space-y-4" novalidate>
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="_action" value="edit" />
+            <!-- Apellido -->
+            <div>
+                <label class="block text-gray-700 font-bold mb-2">Apellido</label>
+                <input type="text" x-model="editForm.Apellido"
+                       class="w-full border rounded px-3 py-2"
+                       :class="{ 'border-red-500': errorApellidoRepetidoEdit || errors.Apellido }"
+                       @input="
+                           let valor = $event.target.value.replace(/[^A-Za-z ]/g,'').replace(/\s+/g,' ').trimStart();
+                           if(/(.)\1\1+/i.test(valor)){ errorApellidoRepetidoEdit = true; }
+                           else { editForm.Apellido = valor; errorApellidoRepetidoEdit = false; }
+                           @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"
+                       "/>
+                <template x-if="errorApellidoRepetidoEdit">
+                    <p class="text-red-500 text-sm mt-1">No se permiten más de 2 letras iguales seguidas.</p>
+                </template>
+                <template x-if="errors.Apellido">
+                    <p class="text-red-500 text-sm mt-1" x-text="errors.Apellido[0]"></p>
+                </template>
+            </div>
 
-                <div>
-                    <label for="Nombre" class="block text-gray-700 font-bold mb-2">Nombre</label>
-                    <input
-    type="text" name="Nombre" id="Nombre" required
-    x-model="editForm.Nombre"
-    maxlength="60"
-    pattern="^[A-Za-z ]{2,}$"
-    title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
-    @input="
-        let input = $event.target;
-        let valor = input.value.replace(/[^A-Za-z ]/g, '').replace(/\s+/g, ' ').trimStart();
+            <!-- Fecha de nacimiento -->
+            <div>
+                <label class="block text-gray-700 font-bold mb-2">Fecha de Nacimiento</label>
+                <input type="date" x-model="editForm.FechaNacimiento"
+                       class="w-full border rounded px-3 py-2"
+                       :class="{ 'border-red-500': editForm.FechaNacimiento && !esMayorDeEdadEdit || errors.FechaNacimiento }"
+                       @input="esMayorDeEdadEdit = calcularMayorEdad(editForm.FechaNacimiento)"
+                       @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"/>
+                <template x-if="editForm.FechaNacimiento && !esMayorDeEdadEdit">
+                    <p class="text-red-500 text-sm mt-1">Debe tener al menos 18 años de edad.</p>
+                </template>
+                <template x-if="errors.FechaNacimiento">
+                    <p class="text-red-500 text-sm mt-1" x-text="errors.FechaNacimiento[0]"></p>
+                </template>
+            </div>
 
-        if (/(.)\1\1+/i.test(valor)) {
-            errorNombreRepetidoEdit = true;
-            input.value = editForm.Nombre;
-        } else {
-            editForm.Nombre = valor;
-            errorNombreRepetidoEdit = false;
-        }
-    "
-    class="w-full border rounded px-3 py-2"
-    :class="{ 'border-red-500': errorNombreRepetidoEdit }"
-/>
-<template x-if="errorNombreRepetidoEdit">
-    <p class="text-red-500 text-sm mt-1">
-        No se permiten más de 2 letras iguales seguidas.
-    </p>
-</template>
+            <!-- Género -->
+            <div>
+                <label class="block text-gray-700 font-bold mb-2">Género</label>
+                <label class="inline-flex items-center mr-4">
+                    <input type="radio" value="F" x-model="editForm.Genero" class="form-radio text-pink-600" />
+                    <span class="ml-2">Femenino</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" value="M" x-model="editForm.Genero" class="form-radio text-blue-600" />
+                    <span class="ml-2">Masculino</span>
+                </label>
+            </div>
 
+            <!-- Correo -->
+            <div>
+                <label class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
+                <input type="email" x-model="editForm.email"
+                       class="w-full border rounded px-3 py-2"
+                       :class="{ 'border-red-500': editForm.email && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email) || errors.email }"/>
+                <template x-if="editForm.email && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email)">
+                    <p class="text-red-600 text-xs mt-1">El correo debe tener al menos 4 caracteres antes y después de la @ y un dominio válido.</p>
+                </template>
+                <template x-if="errors.email">
+                    <p class="text-red-500 text-sm mt-1" x-text="errors.email[0]"></p>
+                </template>
+            </div>
 
-                    @error('Nombre')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                </div>
+            <!-- Teléfonos -->
+            <div class="border-t border-gray-300 pt-4">
+                <h4 class="text-md font-semibold mb-2 text-gray-700">Teléfonos</h4>
 
-                <div>
-                    <label for="Apellido" class="block text-gray-700 font-bold mb-2">Apellido</label>
-                    <input
-    type="text" name="Apellido" id="Apellido" required
-    x-model="editForm.Apellido"
-    maxlength="60"
-    pattern="^[A-Za-z ]{2,}$"
-    title="Solo letras (A-Z) y espacios, mínimo 2 caracteres"
-    @input="
-        let valor = $event.target.value.replace(/[^A-Za-z ]/g,'').replace(/\s+/g,' ').trimStart();
-
-        if (/(.)\1\1+/i.test(valor)) {
-            errorApellidoRepetidoEdit = true;
-        } else {
-            editForm.Apellido = valor;
-            errorApellidoRepetidoEdit = false;
-        }
-    "
-    class="w-full border rounded px-3 py-2"
-    :class="{ 'border-red-500': errorApellidoRepetidoEdit }"
-/>
-<template x-if="errorApellidoRepetidoEdit">
-    <p class="text-red-500 text-sm mt-1">
-        No se permiten más de 2 letras iguales seguidas.
-    </p>
-</template>
-
-@error('Apellido')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-
-
-                </div>
-
-                <div>
-                    <label for="FechaNacimiento" class="block text-gray-700 font-bold mb-2">Fecha de Nacimiento</label>
-                    <input
-    type="date" name="FechaNacimiento" id="FechaNacimiento" required
-    x-model="editForm.FechaNacimiento"
-    class="w-full border rounded px-3 py-2"
-    :class="{ 'border-red-500': editForm.FechaNacimiento && !esMayorDeEdadEdit }"
-/>
-<template x-if="editForm.FechaNacimiento && !esMayorDeEdadEdit">
-    <p class="text-red-500 text-sm mt-1">
-        Debe tener al menos 18 años de edad.
-    </p>
-</template>
-
-                    @error('FechaNacimiento')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
-                </div>
-
-                <div>
-                    <label class="block text-gray-700 font-bold mb-2">Género</label>
-                    <label class="inline-flex items-center mr-4">
-                        <input type="radio" name="Genero" value="F" x-model="editForm.Genero"
-                               class="form-radio text-pink-600" />
-                        <span class="ml-2">Femenino</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="Genero" value="M" x-model="editForm.Genero"
-                               class="form-radio text-blue-600" />
-                        <span class="ml-2">Masculino</span>
-                    </label>
-                    @error('Genero')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="CorreoElectronico" class="block text-gray-700 font-bold mb-2">Correo Electrónico</label>
-                    <input
-    type="email"
-    name="email"
-    id="email"
-    required
-    x-model="editForm.email"
-    maxlength="100"
-    @input="editForm.email = $event.target.value.trim()"
-    class="w-full border rounded px-3 py-2"
-    :class="{
-        'border-red-500': editForm.email && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email),
-        'border-gray-300': !(editForm.email && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email))
-    }"
-/>
-
-<template x-if="editForm.email && !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email)">
-    <p class="text-red-600 text-xs mt-1">
-        El correo debe tener al menos 4 caracteres antes y después de la @ y un dominio válido.
-    </p>
-</template>
-
-@error('email')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
-
-
-
-
-                </div>
-
-                {{-- Teléfonos --}}
-                <div class="border-t border-gray-300 pt-4">
-                    <h4 class="text-md font-semibold mb-2 text-gray-700">Teléfonos</h4>
-
-                    <template x-for="(telefono, index) in editForm.telefonos" :key="index">
-                        <div class="grid grid-cols-2 gap-2 mb-3">
-                            <div>
-                                <label :for="'TipoEditar' + index" class="block text-gray-600 text-sm font-bold mb-1">Tipo</label>
-                                <select
-                                    :name="'telefonos[' + index + '][Tipo]'"
-                                    class="w-full border rounded px-2 py-1"
-                                    x-model="telefono.Tipo"
-                                >
-                                    <option value="Personal">Personal</option>
-                                    <option value="Trabajo">Trabajo</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label :for="'NumeroEditar' + index" class="block text-gray-600 text-sm font-bold mb-1">Número</label>
-                                <input
-                                    type="text"
-                                    :name="'telefonos[' + index + '][Numero]'"
-                                    class="w-full border rounded px-2 py-1"
-                                    x-model="telefono.Numero"
-                                    maxlength="8"
-                                    pattern="^\d{8}$"
-                                    title="Número de 8 dígitos"
-                                    @input="
-                                        telefono.Numero = $event.target.value.replace(/\D/g,'').slice(0,8)
-                                    "
-                                />
-                            </div>
-                            <div class="col-span-2 flex justify-end">
-                                <button type="button" @click="removeTelefonoEdit(index)" class="text-red-600 hover:underline text-sm">Eliminar</button>
-                            </div>
+                <template x-for="(telefono, index) in editForm.telefonos" :key="index">
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div>
+                            <label class="block text-gray-600 text-sm font-bold mb-1">Tipo</label>
+                            <select :name="'telefonos['+index+'][Tipo]'" class="w-full border rounded px-2 py-1" x-model="telefono.Tipo">
+                                <option value="Personal">Personal</option>
+                                <option value="Trabajo">Trabajo</option>
+                                <option value="Otro">Otro</option>
+                            </select>
                         </div>
-                    </template>
+                        <div>
+                            <label class="block text-gray-600 text-sm font-bold mb-1">Número</label>
+                            <input type="text" :name="'telefonos['+index+'][Numero]'" x-model="telefono.Numero"
+    maxlength="8" pattern="^\d{8}$"
+    class="w-full border rounded px-2 py-1"
+    @input="telefono.Numero = telefono.Numero.replace(/\D/g, '').slice(0, 8); validarDuplicados()"
+    @keydown.enter="focusNext($event)"
+    @keydown.tab="focusNext($event)"/>
+                            <template x-if="telefono.errorDuplicado">
+                                <p class="text-red-500 text-sm mt-1">Este número ya existe.</p>
+                            </template>
+                            <template x-if="errors[telefonos.${index}.Numero]">
+                    <p class="text-red-500 text-sm mt-1"
+                       x-text="errors[telefonos.${index}.Numero][0]"></p>
+                </template>
+                        </div>
+                        <div class="col-span-2 flex justify-end">
+                            <button type="button" @click="editForm.telefonos.splice(index,1); validarDuplicados()" class="text-red-600 hover:underline text-sm">Eliminar</button>
+                        </div>
+                    </div>
+                </template>
 
-                    <button type="button" @click="addTelefonoEdit()" class="text-sm text-blue-600 hover:underline mt-2">
-                        + Agregar otro teléfono
-                    </button>
-                </div>
+                <button type="button" @click="editForm.telefonos.push({Tipo:'Personal',Numero:''}); validarDuplicados()" class="text-sm text-blue-600 hover:underline mt-2">
+                    + Agregar otro teléfono
+                </button>
+            </div>
 
-                <div class="flex justify-end gap-2 mt-4">
-                    <button type="button" @click="closeEditModal()"
-                            class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancelar
-                    </button>
-                    <button type="submit"
+            <!-- Botones -->
+            <div class="flex justify-end gap-2 mt-4">
+        <button type="button" @click="closeEditModal()" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancelar</button>
+
+        <button type="submit"
+    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
     :disabled="
         !/^[A-Za-z ]{2,}$/.test(editForm.Nombre || '') ||
         /(.)\1\1+/i.test(editForm.Nombre || '') ||
@@ -577,18 +644,18 @@
         !/^[FM]$/.test(editForm.Genero || '') ||
         !/^[^\s@]{4,}@[^\s@]{4,}\.[^\s@]+$/.test(editForm.email || '') ||
         (editForm.telefonos || []).length === 0 ||
-        (editForm.telefonos || []).some(t => !/^\d{8}$/.test(t.Numero || ''))
-    "
-    class="px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed">
-    Actualizar
+        (editForm.telefonos || []).some(t => !/^\d{8}$/.test(t.Numero || '')) ||
+        (editForm.telefonos || []).some(t => t.errorDuplicado)
+    ">
+Actualizar
 </button>
-
-                </div>
-            </form>
             </div>
-        </div>
-
+        </form>
     </div>
+</div>
+
+
+
 
     {{-- Alpine.js --}}
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -615,6 +682,8 @@
         search: @json(request('search')),
         isCreateModalOpen: false,
         isEditModalOpen: false,
+        editSuccessMessage: '', // <-- Mensaje de éxito para editar
+
 
         errorNombreRepetido: false,
         errorNombreRepetidoEdit: false,
@@ -672,12 +741,92 @@
                 email: persona.email || '',
                 telefonos: persona.telefonos ? JSON.parse(JSON.stringify(persona.telefonos)) : []
             };
+
+// 🔹 Limpiar errores del backend
+    this.errors = {};
+
+    // 🔹 Limpiar errores locales
+    this.errorNombreRepetidoEdit = false;
+    this.errorApellidoRepetidoEdit = false;
+    this.editForm.telefonos.forEach(tel => tel.errorDuplicado = false);
+
+
+
             this.isEditModalOpen = true;
         },
 
         closeEditModal() {
             this.isEditModalOpen = false;
         },
+
+
+async submitEditForm() {
+    // Definimos una variable para la URL de la petición.
+    const url = /persona/${this.editForm.PersonaID}; 
+    
+    try {
+        // Prepara los datos para enviar (incluye el _method y el token CSRF para Laravel)
+        const dataToSend = {
+            ...this.editForm,
+            _method: 'PUT', // Usamos PUT para coincidir con tu Route::put()
+            _token: document.querySelector('meta[name="csrf-token"]').content
+        };
+
+        // Reseteamos errores de validación antes de la nueva petición.
+        this.errors = {}; // Asume que tienes una variable 'errors' en tu x-data para mostrar errores
+        
+        const response = await fetch(url, {
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(dataToSend)
+        });
+
+        // ======================================
+        // MANEJO DE RESPUESTAS
+        // ======================================
+
+        if (response.ok) {
+    // 1. Cerrar modal
+    this.closeEditModal();
+
+    // 2. Usar sesión Laravel para mensaje
+    window.location.href = window.location.pathname + "?success=Registro actualizado con éxito";
+
+
+
+
+
+        } else if (response.status === 422) {
+            // ERROR DE VALIDACIÓN (Status 422 Unprocessable Entity):
+            const errorResult = await response.json();
+            console.error('⚠ Error de validación del servidor:', errorResult);
+            
+            // Asigna los errores a la variable 'errors' para mostrarlos en el formulario.
+            this.errors = errorResult.errors || {}; 
+            
+        } else {
+            // OTROS ERRORES DEL SERVIDOR (404, 500, etc.):
+            const errorResult = await response.json();
+            console.error(❌ Error ${response.status} del servidor:, errorResult);
+            
+            // Aquí podrías mostrar un mensaje de error genérico al usuario
+        }
+
+    } catch (error) {
+        // ERROR DE RED O CONEXIÓN:
+        console.error('❌ Error al intentar enviar la petición:', error);
+    } 
+    // Nota: El 'finally' no es estrictamente necesario si solo reseteas el estado de carga.
+    /* finally {
+        this.isProcessing = false;
+    } */
+},
+
+
+
 
         addTelefono() {
             this.telefonos.push({ Tipo: 'Personal', Numero: '' });
@@ -696,11 +845,36 @@
         },
 
         actionUrl() {
-            return `/persona/${this.editForm.PersonaID}`;
-        }
+            return /persona/${this.editForm.PersonaID};
+        },
+
+focusNext(event) {
+    const tag = event.target.tagName.toLowerCase();
+    const type = event.target.type;
+
+    // Solo interceptar inputs de texto, email, date, number
+    if (tag === 'input' && ['text','email','date','number'].includes(type)) {
+        event.preventDefault(); // evita submit prematuro
+        const form = event.target.form;
+        const index = Array.prototype.indexOf.call(form.elements, event.target);
+        const next = form.elements[index + 1];
+
+        // Mover foco al siguiente input, solo si existe
+        if (next) next.focus();
+    }
+    // Si es un botón submit, no hacemos preventDefault y deja funcionar normalmente
+ }
+
     }
 }
     </script>
+
+
+
+
+
+
+
 
 @php
     $toastType = session('error') ? 'error' : (session('success') ? 'success' : null);

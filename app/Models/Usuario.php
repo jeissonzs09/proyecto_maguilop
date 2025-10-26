@@ -24,10 +24,18 @@ class Usuario extends Authenticatable
         'PrimerAcceso',
         'UsuarioRegistro',
         'FechaRegistro',
+        'FechaCreacion',
+        'FechaVencimiento',
         'Foto', // Nueva columna para la foto
     ];
 
     protected $hidden = ['Contrasena', 'remember_token'];
+
+    protected $casts = [
+        'FechaRegistro' => 'datetime',
+        'FechaCreacion' => 'datetime',
+        'FechaVencimiento' => 'date',
+    ];
 
     // Devuelve la URL de la foto de perfil o una imagen por defecto
     public function getFotoPerfilUrlAttribute()

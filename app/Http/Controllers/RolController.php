@@ -12,14 +12,33 @@ use App\Helpers\BitacoraHelper;
 
 class RolController extends Controller
 {
-    public function index()
-    {
-        if (!PermisosHelper::tienePermiso('Roles', 'ver')) {
+    public function index(Request $request)
+{
+    if (!PermisosHelper::tienePermiso('Roles', 'ver')) {
         abort(403, 'No tienes permiso para ver esta sección.');
     }
-        $roles = DB::table('tbl_roles')->get();
-        return view('roles.index', compact('roles'));
+
+    $perPage = $request->input('per_page', 10);
+
+    $query = DB::table('tbl_roles')->orderBy('ID_Rol', 'asc');
+
+    // Si hay búsqueda
+    if ($request->filled('search')) {
+        $search = strtoupper($request->input('search')); // forzar mayúsculas
+        $query->where('Descripcion', 'LIKE', $search . '%');
     }
+
+    $roles = $query->paginate($perPage)->appends([
+        'per_page' => $perPage,
+        'search'   => $request->input('search'),
+    ]);
+
+    // ✅ pasamos también la búsqueda a la vista
+    $search = $request->input('search');
+
+    return view('roles.index', compact('roles', 'search'));
+}
+
 
     public function create()
     {
@@ -29,12 +48,26 @@ class RolController extends Controller
     public function store(Request $request)
 {
     $request->validate([
-        'Descripcion' => 'required|string|max:100',
+        'Descripcion' => [
+            'required',
+            'string',
+            'min:4',
+            'max:255',
+            'regex:/^[A-ZÁÉÍÓÚÑ\s]+$/', // Solo mayúsculas y espacios
+            'unique:tbl_roles,Descripcion', // No duplicados
+        ],
         'Estado' => 'required|string|max:20',
+    ], [
+        'Descripcion.required' => 'El campo Rol es obligatorio.',
+        'Descripcion.min' => 'El Rol debe tener al menos 4 caracteres.',
+        'Descripcion.max' => 'El Rol no puede tener más de 255 caracteres.',
+        'Descripcion.regex' => 'El Rol solo puede contener letras mayúsculas y espacios.',
+        'Descripcion.unique' => 'Ya existe un rol con ese nombre.',
+        'Estado.required' => 'El campo Estado es obligatorio.',
     ]);
 
     DB::table('tbl_roles')->insert([
-        'Descripcion' => $request->Descripcion,
+        'Descripcion' => strtoupper($request->Descripcion), // fuerza mayúsculas en backend
         'Estado' => $request->Estado,
         'UsuarioRegistro' => auth()->user()->NombreUsuario ?? 'sistema',
         'FEC_Registro' => Carbon::now(),
@@ -57,6 +90,8 @@ class RolController extends Controller
 }
 
 
+
+
     public function edit($id)
     {
         $rol = DB::table('tbl_roles')->where('ID_Rol', $id)->first();
@@ -64,30 +99,51 @@ class RolController extends Controller
     }
 
  public function update(Request $request, $id)
-    {
-        $datosPrevios = DB::table('tbl_roles')->where('ID_Rol', $id)->first();
+{
+    $request->validate([
+        'Descripcion' => [
+            'required',
+            'string',
+            'min:4',
+            'max:255',
+            'regex:/^[A-ZÁÉÍÓÚÑ\s]+$/', // Solo mayúsculas y espacios
+            'unique:tbl_roles,Descripcion,' . $id . ',ID_Rol', // Ignora el rol actual
+        ],
+        'Estado' => 'required|string|max:20',
+    ], [
+        'Descripcion.required' => 'El campo Rol es obligatorio.',
+        'Descripcion.min' => 'El Rol debe tener al menos 4 caracteres.',
+        'Descripcion.max' => 'El Rol no puede tener más de 255 caracteres.',
+        'Descripcion.regex' => 'El Rol solo puede contener letras mayúsculas y espacios.',
+        'Descripcion.unique' => 'Ya existe un rol con ese nombre.',
+        'Estado.required' => 'El campo Estado es obligatorio.',
+    ]);
 
-DB::table('tbl_roles')->where('ID_Rol', $id)->update([
-    'Descripcion' => $request->Descripcion,
-    'Estado' => $request->Estado,
-]);
+    $datosPrevios = DB::table('tbl_roles')->where('ID_Rol', $id)->first();
 
-$datosNuevos = [
-    'Descripcion' => $request->Descripcion,
-    'Estado' => $request->Estado,
-];
+    DB::table('tbl_roles')->where('ID_Rol', $id)->update([
+        'Descripcion' => strtoupper($request->Descripcion), // fuerza mayúsculas
+        'Estado' => $request->Estado,
+    ]);
 
-BitacoraHelper::registrar(
-    'ACTUALIZAR',
-    'tbl_roles',
-    'Se actualizó el rol ID: ' . $id,
-    $datosPrevios,
-    $datosNuevos,
-    'Módulo de Roles'
-);
+    $datosNuevos = [
+        'Descripcion' => strtoupper($request->Descripcion),
+        'Estado' => $request->Estado,
+    ];
 
-        return redirect()->route('roles.index')->with('success', 'Rol actualizado correctamente.');
-    }
+    // Bitácora
+    BitacoraHelper::registrar(
+        'ACTUALIZAR',
+        'tbl_roles',
+        'Se actualizó el rol ID: ' . $id,
+        $datosPrevios,
+        $datosNuevos,
+        'Módulo de Roles'
+    );
+
+    return redirect()->route('roles.index')->with('success', 'Rol actualizado correctamente.');
+}
+
 
 
     public function destroy($id)

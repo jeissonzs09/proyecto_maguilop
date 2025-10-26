@@ -1,3 +1,9 @@
+PERSONA PDF.BLADE
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -118,7 +124,7 @@
                     <td>{{ $persona->Apellido }}</td>
                     <td>{{ \Carbon\Carbon::parse($persona->FechaNacimiento)->format('d/m/Y') }}</td>
                     <td>{{ $persona->Genero }}</td>
-                    <td>{{ $persona->CorreoElectronico }}</td>
+                    <td>{{ $persona->email }}</td>
                     <td>
                         @if ($persona->telefonos->isNotEmpty())
                             @foreach ($persona->telefonos as $telefono)
@@ -134,11 +140,9 @@
     </table>
 
     <div class="footer">
-        <p>© {{ date('Y') }} MAGUILOP. Todos los derechos reservados.</p>
+        <p>© {{ date('Y') }}  UNAH. Todos los derechos reservados.</p>
     </div>
 </div>
 
 </body>
 </html>
-
-

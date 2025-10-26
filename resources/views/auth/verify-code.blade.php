@@ -1,8 +1,37 @@
-<x-guest-layout>
+<x-guest-layout> 
     <style>
         body {
             background: url('{{ asset('images/maguilop-fondo.jpg') }}') no-repeat center center fixed;
             background-size: cover;
+        }
+
+        .support-link {
+            color: #ffffff;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .support-link:hover {
+            color: #d1d1d1;
+        }
+
+        .otp-warning {
+            color: #ffffff;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            transition: color 0.5s ease-in-out;
+        }
+
+        .otp-warning.expiring {
+            color: #ff4d4d; /* rojo alerta */
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.3; }
         }
     </style>
 
@@ -19,19 +48,26 @@
                 Verificación en dos pasos
             </h2>
 
+            <!-- Advertencia OTP -->
+            <p id="otpWarning" class="otp-warning">
+                ⚠️ El código OTP expira y no debe compartirse con nadie.
+            </p>
+
             <p class="text-sm text-white/80 text-center mb-6">
                 Revisa tu correo electrónico. Ingresa el código de 6 dígitos:
             </p>
 
             <!-- Formulario de Código -->
-            <form method="POST" action="{{ route('2fa.code.verify') }}" class="space-y-5">
+            <form method="POST" action="{{ route('2fa.code.verify') }}" class="space-y-5" onsubmit="return validarOTP()">
                 @csrf
 
                 <div>
                     <label for="code" class="block mb-1">Código</label>
                     <input id="code" name="code" type="text" maxlength="6"
                            class="w-full py-2 px-4 rounded-lg bg-white/20 placeholder-white outline-none text-center tracking-widest"
-                           placeholder="" required autofocus />
+                           placeholder="" required autofocus
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                    <p id="otpError" class="text-red-400 text-sm mt-1"></p>
                     @if ($errors->has('code'))
                         <p class="text-red-400 text-sm mt-1">{{ $errors->first('code') }}</p>
                     @endif
@@ -66,8 +102,33 @@
                 </button>
             </form>
 
+            <!-- Opción de contactar soporte -->
+            <p class="text-center text-sm mt-4">
+                ¿No recibiste el correo? Contacta soporte:
+                <a href="mailto:maguilop980@gmail.com" class="support-link">Correo</a> o
+                <a href="https://wa.me/50495020203" target="_blank" class="support-link">WhatsApp</a>
+            </p>
         </div>
     </div>
+
+    <script>
+        // Alerta visual cuando el OTP está por expirar
+        setTimeout(() => {
+            const otpWarning = document.getElementById('otpWarning');
+            otpWarning.classList.add('expiring');
+        }, 240000); // 4 minutos
+
+        // Validación del OTP antes de enviar
+        function validarOTP() {
+            const codeInput = document.getElementById('code');
+            const otpError = document.getElementById('otpError');
+            otpError.textContent = '';
+
+            if (!/^\d{6}$/.test(codeInput.value)) {
+                otpError.textContent = '❌ El OTP debe contener 6 números.';
+                return false;
+            }
+            return true;
+        }
+    </script>
 </x-guest-layout>
-
-

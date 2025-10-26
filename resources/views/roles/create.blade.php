@@ -10,13 +10,15 @@
             @csrf
 
             {{-- Descripción --}}
-            <div class="mb-4">
+            <div class="mb-4 relative">
                 <label for="Descripcion" class="block text-sm font-medium text-gray-700">Descripción del Rol</label>
                 <input type="text" name="Descripcion" id="Descripcion"
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                       value="{{ old('Descripcion') }}" required>
+                       value="{{ old('Descripcion') }}" maxlength="255" required>
+                <p id="charCount" class="absolute right-0 mt-1 text-xs text-gray-500">255 caracteres restantes</p>
+                <p id="errorDescripcion" class="text-sm text-red-600 mt-1 hidden"></p>
                 @error('Descripcion')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    <p data-error-backend class="text-sm text-red-600 mt-1">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -47,5 +49,62 @@
             </div>
         </form>
     </div>
-</x-app-layout>
 
+    {{-- Scripts --}}
+    <script>
+        const descripcionInput = document.getElementById('Descripcion');
+        const errorDescripcion = document.getElementById('errorDescripcion');
+        const charCount = document.getElementById('charCount');
+        const backendError = document.querySelector('[data-error-backend]');
+        const maxLength = 255;
+
+        descripcionInput.addEventListener('input', function () {
+            // Normalizar texto
+            this.value = this.value
+                .toUpperCase()
+                .replace(/[^A-ZÁÉÍÓÚÑ\s]/g, '') // Solo letras y espacios
+                .replace(/^\s+/, '');           // Quitar espacios iniciales
+
+            const value = this.value.trim();
+            const remaining = maxLength - value.length;
+            charCount.textContent = ${remaining} caracteres restantes;
+
+            // --- ocultar error backend cuando el usuario escribe ---
+            if (backendError) {
+                backendError.style.display = 'none';
+            }
+
+            // --- limpiar mensaje de error dinámico ---
+            errorDescripcion.textContent = "";
+            errorDescripcion.classList.add('hidden');
+
+            // --- validaciones ---
+            if (value === "") {
+                return; // no validar si está vacío
+            }
+
+            if (value.length < 4) {
+                errorDescripcion.textContent = "El rol debe tener al menos 4 caracteres.";
+                errorDescripcion.classList.remove('hidden');
+                return;
+            }
+
+            // Lista estática de duplicados (ejemplo)
+            const duplicados = ["ADMIN", "USUARIO"];
+            if (duplicados.includes(value)) {
+                errorDescripcion.textContent = "Este rol ya existe.";
+                errorDescripcion.classList.remove('hidden');
+                return;
+            }
+        });
+
+        // Extra: al perder foco, si el campo está vacío, ocultar mensajes
+        descripcionInput.addEventListener('blur', function () {
+            if (this.value.trim() === "") {
+                errorDescripcion.textContent = "";
+                errorDescripcion.classList.add('hidden');
+                if (backendError) backendError.style.display = 'none';
+            }
+        });
+    </script>
+</x-app-layout>
